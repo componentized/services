@@ -1,0 +1,19 @@
+
+interface types {
+    type service-instance-id = string;
+    type service-binding-id = string;
+
+    record credential {
+        key: string,
+        value: string,
+    }
+    record request {
+        key: string,
+        value: string,
+    }
+    type scope = string;
+    type tier = string;
+
+    type context = list<u8>;
+    type error = string;
+}

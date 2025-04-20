@@ -1,0 +1,9 @@
+interface ops {
+    use types.{error};
+
+    %list: func(path: string) -> result<list<string>, error>;
+    read: func(path: string) -> result<list<u8>, error>;
+    write: func(path: string, data: list<u8>) -> result<_, error>;
+    move: func(from-path: string, to-path: string) -> result<_, error>;
+    delete: func(path: string) -> result<_, error>;
+}

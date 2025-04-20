@@ -1,0 +1,11 @@
+package componentized:logging;
+
+let logger = new componentized:logger {
+    store: new componentized:app-config {}.store,
+    stdout: new componentized:stdout-to-stderr {
+        ...
+    }.stdout,
+    ...
+};
+
+export logger...;

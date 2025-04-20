@@ -1,0 +1,12 @@
+[package]
+name = "uuid-ids"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+regex-lite = "0.1"
+wit-bindgen = { workspace = true }

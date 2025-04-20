@@ -1,0 +1,17 @@
+
+/// Utility to normalize the creation of service-binding-id and service-instance-id values.
+/// This interface is implemented by the platform and provided to the service lifecycle.
+interface ids {
+    use types.{service-binding-id, service-instance-id, context, error};
+
+    /// Create a new service-instance-id
+    generate-instance-id: func(ctx: context) -> result<service-instance-id, error>;
+
+    /// Create a new service-binding-id, for an existing service-instance-id. Implementations may
+    /// error if the service instance does not exist.
+    generate-binding-id: func(ctx: context, instance-id: service-instance-id) -> result<service-binding-id, error>;
+
+    /// Lookup the service-instance-id the service-binding-id was created for. Implementations may
+    /// error if the service binding does not exist.
+    lookup-instance-id: func(binding-id: service-binding-id) -> result<service-instance-id, error>;
+}

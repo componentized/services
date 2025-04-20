@@ -1,0 +1,175 @@
+# sketch of a wa8s implementation
+
+
+# the platform defines a service lifecycle
+---
+apiVersion: services.wa8s.reconciler.io/v1alpha1
+kind: ClusterLifecycle
+metadata:
+  name: redis.services.wa8s.reconciler.io
+spec:
+  target:
+    apiVersion: services.example.com/v1alpha1
+    kind: Redis
+    plural: redis
+  lifecycle:
+    # ref or component
+    # ref:
+    #   namespace:
+    #   name: 
+    component: example.com/redis/lifecycle@sha256:abc1234
+  client: 
+    # ref or component
+    # ref:
+    #   namespace:
+    #   name: 
+    component: example.com/redis@sha256:abc1234
+  tiers:
+  - name: default
+  requests:
+  - name: memoryLimit
+    description: ...
+  scopes:
+  - name: default
+    description: ...
+  - name: read-only
+    description: ...
+status:
+  conditions:
+  - type: Ready
+    status: "True"
+  client:
+    component: example.com/redis@sha256:abc1234
+    wit:
+      imports:
+      - wasi:keyvalue/atomics@0.2.0-draft2
+      - wasi:keyvalue/batch@0.2.0-draft2
+      - wasi:keyvalue/store@0.2.0-draft2
+      exports:
+      - wasi:keyvalue/watcher@0.2.0-draft2
+  lifecycle:
+    component: example.com/redis/lifecycle@sha256:abc1234
+
+
+# platform users can create services back by the service lifecycle
+---
+apiVersion: services.example.com/v1alpha1
+kind: Redis
+metadata:
+  namespace: default
+  name: my-redis
+  uuid: # generated, used as service-instance-id
+spec:
+  tier: default
+  requests: {}
+  retentionPolicy: retainOnDestroy
+status:
+  conditions:
+  - type: Ready
+    status: "True"
+  client:
+    component: example.com/redis/default@sha256:abc1234
+    wit:
+      imports:
+      - wasi:keyvalue/atomics@0.2.0-draft2
+      - wasi:keyvalue/batch@0.2.0-draft2
+      - wasi:keyvalue/store@0.2.0-draft2
+      - wasmcloud:secret/store@whatever
+      exports:
+      - wasi:keyvalue/watcher@0.2.0-draft2
+  scopes: # copied from ClusterLifecycle.spec.scopes
+  - name: default
+    description: ...
+  - name: read-only
+    description: ...
+
+# a common service instance is created internally for each service. This allows basic references to services by name rather than also requiring the GVK
+---
+apiVersion: internal.services.wa8s.reconciler.io/v1alpha1
+kind: ServiceInstance
+metadata:
+  namespace: default
+  name: my-redis
+spec:
+  lifecycleRef:
+    apiVersion: services.wa8s.reconciler.io/v1alpha1
+    kind: ClusterLifecycle
+    name: redis.services.wa8s.reconciler.io
+  tier: default
+  requests: {}
+  retentionPolicy: retainOnDestroy
+status:
+  conditions:
+  - type: Ready
+    status: "True"
+  client:
+    component: example.com/redis/default@sha256:abc1234
+    wit:
+      imports:
+      - wasi:keyvalue/atomics@0.2.0-draft2
+      - wasi:keyvalue/batch@0.2.0-draft2
+      - wasi:keyvalue/store@0.2.0-draft2
+      - wasmcloud:secret/store@whatever
+      exports:
+      - wasi:keyvalue/watcher@0.2.0-draft2
+  scopes: # copied from ClusterLifecycle.spec.bindingScopes
+  - name: default
+    description: ...
+  - name: read-only
+    description: ...
+
+# apps can bind to services, the client provided by the service is composed ino the component at runtime fully credentialed.
+---
+apiVersion: containers.wa8s.reconciler.io/v1alpha1
+kind: HttpTrigger
+metadata:
+  name: hello
+spec:
+  ...
+  services:
+  - name: my-redis
+    # TODO we may need a way to remap interfaces for cases where two services with the same interface are bound
+    scopes:
+    - read-only
+
+# the app resource creates internal binding resources for each referenced service
+---
+apiVersion: internal.services.wa8s.reconciler.io/v1alpha1
+kind: Binding
+metadata:
+  namespace: default
+  generateName: hello-my-redis-
+  uuid: # generated, used as service-binding-id
+  ownerReferences:
+  - # bindings should be controlled by a workload component (like HttpTrigger) and not created manually
+  labels:
+    containers.wa8s.reonciler.io/http-trigger: hello
+spec:
+  serviceBindings:
+    name: my-redis
+  scopes:
+  - read-only
+status:
+  binding: # Kubernetes Service Binding compatible
+    name: foo-abc123
+  client:
+    image: example.com/redis/default@sha256:abc1234
+
+# a secret is created by the credential store holding the credentials to be used by the service client
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: default
+  generateName: foo-
+  name: foo-abc123
+  ownerReferences:
+  - # reference to Binding
+type: services.example.com/redis
+immutable: true
+stringData:
+  type: redis
+  provider: services.example.com
+  host: example.com
+  username: <generated>
+  password: <generated>

@@ -1,0 +1,139 @@
+name: CI
+
+on:
+  push: 
+    branches:
+    - main
+    tags:
+    - 'v[0-9]+\.[0-9]+\.[0-9]+-?**'
+  pull_request: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable,nightly
+        components: rustfmt
+        target: wasm32-unknown-unknown,wasm32-wasip2
+    - name: Install cargo binstall
+      uses: cargo-bins/cargo-binstall@main
+    - name: Install cargo component
+      run: cargo binstall --force cargo-component
+    - name: Install static-config
+      run: cargo binstall --force static-config
+    - name: Install wac
+      run: cargo binstall --force wac-cli
+    - name: Install wkg
+      run: cargo binstall --force wkg
+    - name: Update deps
+      run: ./update-deps.sh
+    - name: Build components
+      run: ./build.sh
+    - name: Check for drift in generated files
+      run: git diff --exit-code .
+    - name: Collect components.tar
+      run: tar -cvf ../components.tar *.wasm*
+      working-directory: ./lib
+    - name: Collect test-components.tar
+      run: tar -cvf ../../test-components.tar *.wasm*
+      working-directory: ./lib/test
+    - name: Upload components.tar
+      uses: actions/upload-artifact@v4
+      with:
+        name: components.tar
+        path: components.tar
+        retention-days: 7
+    - name: Upload test-components.tar
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-components.tar
+        path: test-components.tar
+        retention-days: 7
+
+  test:
+    needs:
+    - build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable,nightly
+        components: rustfmt
+        target: wasm32-unknown-unknown,wasm32-wasip2
+    - name: Install cargo binstall
+      uses: cargo-bins/cargo-binstall@main
+    - name: Install wasmtime
+      run: cargo binstall --force wasmtime-cli
+    - name: Download components.tar
+      uses: actions/download-artifact@v4
+      with:
+        name: components.tar
+    - name: Extract components
+      run: mkdir -p lib && tar -xvf components.tar -C lib
+    - name: Download test-components.tar
+      uses: actions/download-artifact@v4
+      with:
+        name: test-components.tar
+    - name: Extract test-components
+      run: mkdir -p lib/test &&  tar -xvf test-components.tar -C lib/test
+    - name: Start Valkey service
+      run: docker run --rm --name valkey -d -p 6379:6379 valkey/valkey:8
+    - name: Test components
+      run: ./test.sh
+      env:
+        SKIP_BUILD: true
+    - name: Demo components
+      run: ./demo.sh
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+    - test
+    permissions:
+      contents: write
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable
+        components: rustfmt
+        target: wasm32-unknown-unknown
+    - name: Install cargo binstall
+      uses: cargo-bins/cargo-binstall@main
+    - name: Install wkg
+      run: cargo binstall --force wkg
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+    - name: Download components.tar
+      uses: actions/download-artifact@v4
+      with:
+        name: components.tar
+    - name: Extract components
+      run: tar -xvf components.tar -C lib
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Publish components to gchr.io
+      run: make publish
+      env:
+        REPOSITORY: "ghcr.io/${{ github.repository }}"
+        VERSION: "${{ steps.get_version.outputs.VERSION }}"
+    - name: Draft GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        draft: true
+        files: |
+          lib/*.wasm
+          components.tar
+        fail_on_unmatched_files: true
+        token: ${{ secrets.GITHUB_TOKEN }}

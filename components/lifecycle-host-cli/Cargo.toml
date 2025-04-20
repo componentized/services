@@ -1,0 +1,12 @@
+[package]
+name = "lifecycle-host-cli"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+clap = { version = "4.5.27", features = ["derive"] }
+wit-bindgen = { workspace = true }

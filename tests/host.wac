@@ -1,0 +1,25 @@
+package componentized:service;
+
+let logging = new componentized:logging {
+    ...
+};
+
+let credential-admin = new componentized:credential-admin {
+    ...
+};
+let ids = new componentized:ids {
+    ...
+};
+let lifecycle = new componentized:lifecycle {
+    credential-admin: credential-admin.credential-admin,
+    ids: ids.ids,
+    ...
+};
+
+export new componentized:lifecycle-host {
+    "componentized:services/lifecycle": lifecycle.lifecycle,
+    
+    logging: logging.logging,
+
+    ...
+}...;

@@ -1,0 +1,33 @@
+package componentized:service;
+
+let ids = new componentized:ids {
+    ...
+};
+let credential-store = new componentized:credential-store {
+    ...
+};
+let credential-admin = new componentized:credential-admin {
+    ...
+};
+let lifecycle = new componentized:lifecycle {
+    ids: ids.ids,
+    credential-admin: credential-admin.credential-admin,
+    credential-store: credential-store.credential-store,
+    ...
+};
+
+let ops = new componentized:ops {
+    ...
+};
+let static-config-factory = new componentized:static-config-factory {};
+
+export new componentized:cli {
+    "componentized:services/credential-store": credential-store.credential-store,
+    "componentized:services/credential-admin": credential-admin.credential-admin,
+    "componentized:services/lifecycle": lifecycle.lifecycle,
+
+    "componentized:services/ops": ops.ops,
+    "componentized:config/factory": static-config-factory.factory,
+
+    ...
+}.run;
