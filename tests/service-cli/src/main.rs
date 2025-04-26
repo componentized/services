@@ -5,7 +5,9 @@ use componentized::services::types::{
     Credential, Error, Request, Scope, ServiceBindingId, ServiceInstanceId, Tier,
 };
 use componentized::services::{lifecycle, ops};
+use regex_lite::Regex;
 use std::io::{self, Write};
+use wasi::random::random::get_random_bytes;
 
 /// componentized services CLI
 #[derive(Debug, Parser)] // requires `derive` feature
@@ -79,6 +81,10 @@ enum Commands {
         /// Identifier for the service binding
         #[arg(required = true)]
         binding_id: ServiceBindingId,
+
+        /// Identifier for the service instance
+        #[arg(required = true)]
+        instance_id: ServiceInstanceId,
     },
 
     /// List bindings
@@ -211,6 +217,78 @@ impl From<String> for Request {
         }
     }
 }
+pub(crate) struct UuidIds {}
+
+impl UuidIds {
+    pub fn generate() -> String {
+        // cribbed from the uuid crate
+        let bytes: [u8; 16] = get_random_bytes(16)
+            .try_into()
+            .expect("unexpected number of bytes");
+        let src = (u128::from_be_bytes(bytes) & 0xFFFFFFFFFFFF4FFFBFFFFFFFFFFFFFFF
+            | 0x40008000000000000000)
+            .to_be_bytes();
+
+        // lowercase letters
+        let lut: [u8; 16] = [
+            b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'a', b'b', b'c', b'd',
+            b'e', b'f',
+        ];
+        let groups = [(0, 8), (9, 13), (14, 18), (19, 23), (24, 36)];
+        let mut dst = [0; 36];
+
+        let mut group_idx = 0;
+        let mut i = 0;
+        while group_idx < 5 {
+            let (start, end) = groups[group_idx];
+            let mut j = start;
+            while j < end {
+                let x = src[i];
+                i += 1;
+
+                dst[j] = lut[(x >> 4) as usize];
+                dst[j + 1] = lut[(x & 0x0f) as usize];
+                j += 2;
+            }
+            if group_idx < 4 {
+                dst[end] = b'-';
+            }
+            group_idx += 1;
+        }
+        String::from_utf8(dst.into_iter().collect()).unwrap()
+    }
+
+    fn validate_instance_id(instance_id: &ServiceInstanceId) -> Result<(), Error> {
+        match Regex::new(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0]{12}$")
+            .unwrap()
+            .is_match(instance_id)
+        {
+            false => Err(Error::from(format!(
+                "expected instance-id to be a uuid, got: {}",
+                instance_id
+            ))),
+            true => Ok(()),
+        }
+    }
+
+    fn generate_instance_id() -> Result<ServiceInstanceId, Error> {
+        let uuid = Self::generate();
+        let instance_id: ServiceInstanceId = format!("{}-000000000000", uuid[0..23].to_string());
+        Ok(instance_id)
+    }
+
+    fn generate_binding_id(instance_id: &ServiceInstanceId) -> Result<ServiceBindingId, Error> {
+        Self::validate_instance_id(&instance_id)?;
+
+        let uuid = Self::generate();
+        let binding_id: ServiceBindingId = format!(
+            "{}-{}",
+            instance_id[0..23].to_string(),
+            uuid[24..].to_string()
+        );
+        Ok(binding_id)
+    }
+}
 
 fn main() -> Result<(), ()> {
     match Cli::parse().command {
@@ -221,12 +299,13 @@ fn main() -> Result<(), ()> {
         } => {
             eprintln!("Provisioning service: {type_}");
 
-            let ctx = vec![];
+            let instance_id = UuidIds::generate_instance_id()
+                .map_err(|e| eprintln!("Error generating instance id: {}", e))?;
 
-            let service_id = lifecycle::provision(&ctx, &type_, tier.as_ref(), requests.as_deref())
+            lifecycle::provision(&instance_id, &type_, tier.as_ref(), requests.as_deref())
                 .map_err(|e| eprintln!("Error provisioning: {}", e))?;
 
-            println!("{}", service_id);
+            println!("{}", instance_id);
 
             Ok(())
         }
@@ -255,10 +334,12 @@ fn main() -> Result<(), ()> {
         } => {
             eprintln!("Binding to {}", instance_id);
 
-            let ctx = vec![];
+            let binding_id = UuidIds::generate_binding_id(&instance_id).map_err(|e| {
+                eprintln!("Error generating binding id: {}", e);
+            })?;
             let scopes = scopes.as_deref();
 
-            let binding_id = lifecycle::bind(&ctx, &instance_id, scopes).map_err(|e| {
+            lifecycle::bind(&binding_id, &instance_id, scopes).map_err(|e| {
                 eprintln!("Error binding to {}: {}", instance_id, e);
             })?;
 
@@ -266,10 +347,13 @@ fn main() -> Result<(), ()> {
 
             Ok(())
         }
-        Commands::Unbind { binding_id } => {
+        Commands::Unbind {
+            binding_id,
+            instance_id,
+        } => {
             eprintln!("Unbinding {}", binding_id);
 
-            lifecycle::unbind(&binding_id).map_err(|e| {
+            lifecycle::unbind(&binding_id, &instance_id).map_err(|e| {
                 eprintln!("Error unbinding: {}", e);
             })
         }

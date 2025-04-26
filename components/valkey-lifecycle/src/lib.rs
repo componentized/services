@@ -2,11 +2,10 @@
 
 use chrono::DateTime;
 use componentized::services::credential_admin::{destroy, publish};
-use componentized::services::ids;
 use componentized::services::types::{Credential, Request, Scope, Tier};
 use componentized::valkey::store::{self as valkey};
 use exports::componentized::services::lifecycle::{
-    Context, Error, Guest as Lifecycle, ServiceBindingId, ServiceInstanceId,
+    Error, Guest as Lifecycle, ServiceBindingId, ServiceInstanceId,
 };
 use wasi::clocks::wall_clock::now;
 use wasi::config::store::{self as config};
@@ -68,16 +67,14 @@ impl ValkeyService {
 
 impl Lifecycle for ValkeyService {
     fn provision(
-        ctx: Context,
+        instance_id: ServiceInstanceId,
         type_: String,
         tier: Option<Tier>,
         requests: Option<Vec<Request>>,
-    ) -> Result<ServiceInstanceId, Error> {
+    ) -> Result<(), Error> {
         if type_ != "valkey" {
             Err(Error::from("only 'valkey' types are supported"))?;
         }
-
-        let instance_id = ids::generate_instance_id(&ctx)?;
 
         if tier.is_some() {
             Err(Error::from("tier is not supported"))?;
@@ -90,7 +87,7 @@ impl Lifecycle for ValkeyService {
 
         connection.hset(&Self::instances_hash_key(), &instance_id, "valkey")?;
 
-        Ok(instance_id)
+        Ok(())
     }
 
     fn update(
@@ -111,7 +108,7 @@ impl Lifecycle for ValkeyService {
 
     fn destroy(instance_id: ServiceInstanceId, retain: Option<bool>) -> Result<(), Error> {
         for binding_id in Self::list_bindings(instance_id.clone())? {
-            Self::unbind(binding_id)?;
+            Self::unbind(binding_id, instance_id.clone())?;
         }
 
         let connection = Self::connect()?;
@@ -129,10 +126,10 @@ impl Lifecycle for ValkeyService {
     }
 
     fn bind(
-        ctx: Context,
+        binding_id: ServiceBindingId,
         instance_id: ServiceInstanceId,
         scopes: Option<Vec<Scope>>,
-    ) -> Result<ServiceBindingId, Error> {
+    ) -> Result<(), Error> {
         // default and validate scopes
         let scopes = scopes.unwrap_or(vec![Scope::from("read"), Scope::from("write")]);
         for scope in scopes.clone() {
@@ -143,7 +140,6 @@ impl Lifecycle for ValkeyService {
 
         let connection = Self::connect()?;
 
-        let binding_id = ids::generate_binding_id(&ctx, &instance_id)?;
         let key_prefix = Self::instance_data_key_prefix(instance_id.clone());
 
         let hostname = Self::hostname()?;
@@ -212,12 +208,10 @@ impl Lifecycle for ValkeyService {
             "valkey",
         )?;
 
-        Ok(binding_id)
+        Ok(())
     }
 
-    fn unbind(binding_id: ServiceBindingId) -> Result<(), Error> {
-        let instance_id = ids::lookup_instance_id(&binding_id)?;
-
+    fn unbind(binding_id: ServiceBindingId, instance_id: ServiceInstanceId) -> Result<(), Error> {
         let connection = Self::connect()?;
 
         connection.acl_deluser(&binding_id)?;

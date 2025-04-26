@@ -14,8 +14,6 @@ rm -rf "${SCRIPT_DIR}/lib/test" && mkdir -p "${SCRIPT_DIR}/lib/test"
 
 cargo component build -p credential-config --release --target wasm32-unknown-unknown
 cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/credential_config.wasm" "${SCRIPT_DIR}/lib/credential-config.wasm"
-cargo component build -p uuid-ids --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/uuid_ids.wasm" "${SCRIPT_DIR}/lib/uuid-ids.wasm"
 cargo component build -p keyvalue-credential-admin --release --target wasm32-unknown-unknown
 cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/keyvalue_credential_admin.wasm" "${SCRIPT_DIR}/lib/keyvalue-credential-admin.wasm"
 cargo component build -p keyvalue-credential-store --release --target wasm32-unknown-unknown
@@ -57,8 +55,6 @@ cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_credential_store.wa
 
 # webhook components
 
-cargo component build -p webhook-ids --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/webhook_ids.wasm" "${SCRIPT_DIR}/lib/webhook-ids.wasm"
 cargo component build -p webhook-credential-admin --release --target wasm32-unknown-unknown
 cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/webhook_credential_admin.wasm" "${SCRIPT_DIR}/lib/webhook-credential-admin.wasm"
 cargo component build -p webhook-credential-store --release --target wasm32-unknown-unknown
@@ -105,7 +101,6 @@ wac compose -o "${SCRIPT_DIR}/lib/test/cli.wasm" \
     -d componentized:logging="${SCRIPT_DIR}/lib/logging.wasm" \
     -d componentized:cli="${SCRIPT_DIR}/lib/test/service-cli.wasm" \
     -d componentized:lifecycle="${SCRIPT_DIR}/lib/test/lifecycle.wasm" \
-    -d componentized:ids="${SCRIPT_DIR}/lib/uuid-ids.wasm" \
     -d componentized:credential-store="${SCRIPT_DIR}/lib/${cred_store_type}-credential-store.wasm" \
     -d componentized:credential-admin="${SCRIPT_DIR}/lib/${cred_store_type}-credential-admin.wasm" \
     -d componentized:ops="${SCRIPT_DIR}/lib/test/ops.wasm" \
@@ -116,7 +111,6 @@ wac compose -o "${SCRIPT_DIR}/lib/test/host-cli-valkey.wasm" \
     -d componentized:logging="${SCRIPT_DIR}/lib/test/logging.wasm" \
     -d componentized:lifecycle-host="${SCRIPT_DIR}/lib/lifecycle-host-cli.wasm" \
     -d componentized:lifecycle="${SCRIPT_DIR}/lib/valkey-lifecycle.wasm" \
-    -d componentized:ids="${SCRIPT_DIR}/lib/uuid-ids.wasm" \
     -d componentized:credential-admin="${SCRIPT_DIR}/lib/valkey-credential-admin.wasm" \
     "${SCRIPT_DIR}/tests/host.wac"
 
@@ -124,6 +118,5 @@ wac compose -o "${SCRIPT_DIR}/lib/test/host-http-valkey.wasm" \
     -d componentized:logging="${SCRIPT_DIR}/lib/test/logging.wasm" \
     -d componentized:lifecycle-host="${SCRIPT_DIR}/lib/lifecycle-host-http.wasm" \
     -d componentized:lifecycle="${SCRIPT_DIR}/lib/valkey-lifecycle.wasm" \
-    -d componentized:ids="${SCRIPT_DIR}/lib/uuid-ids.wasm" \
     -d componentized:credential-admin="${SCRIPT_DIR}/lib/valkey-credential-admin.wasm" \
     "${SCRIPT_DIR}/tests/host.wac"

@@ -2,7 +2,6 @@ package componentized:services;
 
 world service-lifecycle {
     export lifecycle;
-    import ids;
     import credential-admin;
     
     include wasi:clocks/imports@0.2.3;
@@ -86,18 +85,6 @@ world stub-client {
     include wasi:logging/imports@0.1.0-draft;
 }
 
-world uuid-ids {
-    export ids;
-    include wasi:random/imports@0.2.3;
-}
-
-world webhook-ids {
-    export ids;
-    include wasi:http/imports@0.2.3;
-    include wasi:config/imports@0.2.0-draft;
-    include wasi:logging/imports@0.1.0-draft;
-}
-
 world webhook-credential-admin {
     export credential-admin;
     include wasi:http/imports@0.2.3;
@@ -116,7 +103,6 @@ world webhook-credential-store {
 
 world valkey-lifecycle {
     export lifecycle;
-    import ids;
     import credential-admin;
     import componentized:valkey/store;
     
@@ -137,29 +123,30 @@ world cli {
     import ops;
     import componentized:config/factory;
 
+    include wasi:random/imports@0.2.3;
     //include wasi:cli/command@0.2.3;
 }
 
 world lifecycle-router {
     import filesystem-lifecycle: interface {
-        use types.{service-instance-id, service-binding-id, request, scope, tier, context, error};
+        use types.{service-instance-id, service-binding-id, request, scope, tier, error};
 
-        provision: func(ctx: context, %type: string, tier: option<tier>, requests: option<list<request>>) -> result<service-instance-id, error>;
+        provision: func(instance-id: service-instance-id, %type: string, tier: option<tier>, requests: option<list<request>>) -> result<_, error>;
         update: func(instance-id: service-instance-id, tier: option<tier>, requests: option<list<request>>) -> result<_, error>;
         destroy: func(instance-id: service-instance-id, retain: option<bool>) -> result<_, error>;
-        bind: func(ctx: context, instance-id: service-instance-id, scopes: option<list<scope>>) -> result<service-binding-id, error>;
+        bind: func(binding-id: service-binding-id, instance-id: service-instance-id, scopes: option<list<scope>>) -> result<_, error>;
         list-bindings: func(instance-id: service-instance-id) -> result<list<service-binding-id>, error>;
-        unbind: func(binding-id: service-binding-id) -> result<_, error>;
+        unbind: func(binding-id: service-binding-id, instance-id: service-instance-id) -> result<_, error>;
     }
     import keyvalue-lifecycle: interface {
-        use types.{service-instance-id, service-binding-id, request, scope, tier, context, error};
+        use types.{service-instance-id, service-binding-id, request, scope, tier, error};
         
-        provision: func(ctx: context, %type: string, tier: option<tier>, requests: option<list<request>>) -> result<service-instance-id, error>;
+        provision: func(instance-id: service-instance-id, %type: string, tier: option<tier>, requests: option<list<request>>) -> result<_, error>;
         update: func(instance-id: service-instance-id, tier: option<tier>, requests: option<list<request>>) -> result<_, error>;
         destroy: func(instance-id: service-instance-id, retain: option<bool>) -> result<_, error>;
-        bind: func(ctx: context, instance-id: service-instance-id, scopes: option<list<scope>>) -> result<service-binding-id, error>;
+        bind: func(binding-id: service-binding-id, instance-id: service-instance-id, scopes: option<list<scope>>) -> result<_, error>;
         list-bindings: func(instance-id: service-instance-id) -> result<list<service-binding-id>, error>;
-        unbind: func(binding-id: service-binding-id) -> result<_, error>;
+        unbind: func(binding-id: service-binding-id, instance-id: service-instance-id) -> result<_, error>;
     }
     import credential-admin;
     import credential-store;

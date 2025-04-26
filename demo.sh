@@ -37,6 +37,6 @@ binding_id=${read_only_binding_id} componentized_services ops write greeting 'Uh
 binding_id=${read_only_binding_id} componentized_services ops read greeting
 
 # cleanup
-componentized_services unbind ${read_write_binding_id}
-componentized_services unbind ${read_only_binding_id}
+componentized_services unbind ${read_write_binding_id} ${instance_id}
+componentized_services unbind ${read_only_binding_id} ${instance_id}
 componentized_services destroy ${instance_id}

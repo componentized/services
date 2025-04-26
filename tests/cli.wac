@@ -1,8 +1,5 @@
 package componentized:service;
 
-let ids = new componentized:ids {
-    ...
-};
 let credential-store = new componentized:credential-store {
     ...
 };
@@ -10,7 +7,6 @@ let credential-admin = new componentized:credential-admin {
     ...
 };
 let lifecycle = new componentized:lifecycle {
-    ids: ids.ids,
     credential-admin: credential-admin.credential-admin,
     credential-store: credential-store.credential-store,
     ...

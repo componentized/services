@@ -14,6 +14,5 @@ interface types {
     type scope = string;
     type tier = string;
 
-    type context = list<u8>;
     type error = string;
 }
