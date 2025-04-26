@@ -177,8 +177,8 @@ impl Lifecycle for FilesystemService {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
-    world: "service-lifecycle",
+    path: "../wit",
+    world: "filesystem-lifecycle",
     generate_all
 });
 

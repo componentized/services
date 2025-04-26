@@ -1,0 +1,79 @@
+package componentized:services-components;
+
+world filesystem-lifecycle {
+    include componentized:services/service-lifecycle;
+}
+
+world valkey-lifecycle {
+    include componentized:services/service-lifecycle;
+    import componentized:valkey/store;
+}
+
+world credential-config {
+    export wasi:config/store@0.2.0-draft;
+
+    import componentized:services/credential-store;
+
+    include wasi:config/imports@0.2.0-draft;
+}
+
+// lifecycle hosts
+world lifecycle-host-cli {
+    export wasi:cli/run@0.2.3;
+
+    import componentized:services/lifecycle;
+    
+    include wasi:logging/imports@0.1.0-draft;
+    include wasi:cli/imports@0.2.3;
+}
+
+world lifecycle-host-http {
+    import componentized:services/lifecycle;
+    export wasi:http/incoming-handler@0.2.3;
+    
+    include wasi:logging/imports@0.1.0-draft;
+}
+
+// credential store implementations
+
+world filesystem-credential-store {
+    export componentized:services/credential-store;
+
+    include wasi:config/imports@0.2.0-draft;
+    include wasi:filesystem/imports@0.2.3;
+}
+
+world filesystem-credential-admin {
+    export componentized:services/credential-admin;
+
+    include wasi:config/imports@0.2.0-draft;
+    include wasi:filesystem/imports@0.2.3;
+}
+
+world keyvalue-credential-store {
+    export componentized:services/credential-store;
+
+    include wasi:config/imports@0.2.0-draft;
+    include wasi:keyvalue/imports@0.2.0-draft2;
+}
+
+world keyvalue-credential-admin {
+    export componentized:services/credential-admin;
+
+    include wasi:config/imports@0.2.0-draft;
+    include wasi:keyvalue/imports@0.2.0-draft2;
+}
+
+world webhook-credential-admin {
+    export componentized:services/credential-admin;
+    include wasi:http/imports@0.2.3;
+    include wasi:config/imports@0.2.0-draft;
+    include wasi:logging/imports@0.1.0-draft;
+}
+
+world webhook-credential-store {
+    export componentized:services/credential-store;
+    include wasi:http/imports@0.2.3;
+    include wasi:config/imports@0.2.0-draft;
+    include wasi:logging/imports@0.1.0-draft;
+}

@@ -107,7 +107,7 @@ impl Guest for WebhookCredentialAdmin {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "webhook-credential-admin",
     generate_all
 });

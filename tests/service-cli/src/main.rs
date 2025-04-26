@@ -1,10 +1,11 @@
 use clap::{command, Args, Parser, Subcommand};
 use componentized::services::credential_admin::{destroy, publish};
 use componentized::services::credential_store::fetch;
+use componentized::services::lifecycle;
 use componentized::services::types::{
     Credential, Error, Request, Scope, ServiceBindingId, ServiceInstanceId, Tier,
 };
-use componentized::services::{lifecycle, ops};
+use componentized::services_test_components::ops;
 use regex_lite::Regex;
 use std::io::{self, Write};
 use wasi::random::random::get_random_bytes;
@@ -302,7 +303,7 @@ fn main() -> Result<(), ()> {
             let instance_id = UuidIds::generate_instance_id()
                 .map_err(|e| eprintln!("Error generating instance id: {}", e))?;
 
-            lifecycle::provision(&instance_id, &type_, tier.as_ref(), requests.as_deref())
+            lifecycle::provision(&instance_id, &type_, tier.as_deref(), requests.as_deref())
                 .map_err(|e| eprintln!("Error provisioning: {}", e))?;
 
             println!("{}", instance_id);
@@ -316,7 +317,7 @@ fn main() -> Result<(), ()> {
         } => {
             eprintln!("Updating service {}", instance_id);
 
-            lifecycle::update(&instance_id, tier.as_ref(), requests.as_deref())
+            lifecycle::update(&instance_id, tier.as_deref(), requests.as_deref())
                 .map_err(|e| eprintln!("Error updating: {}", e))
         }
         Commands::Destroy {
@@ -486,7 +487,7 @@ fn main() -> Result<(), ()> {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "cli",
     generate_all
 });

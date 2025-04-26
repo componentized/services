@@ -28,7 +28,7 @@ impl Guest for StubCredentialAdmin {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "stub-credential-admin",
     generate_all
 });

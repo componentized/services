@@ -44,8 +44,12 @@ impl Guest for LifecycleHost {
                             .collect()
                     });
                 log(Level::Info, "host", &format!("Provision {type_}"));
-                match lifecycle::provision(&instance_id, &type_, tier.as_ref(), requests.as_deref())
-                {
+                match lifecycle::provision(
+                    &instance_id,
+                    &type_,
+                    tier.as_deref(),
+                    requests.as_deref(),
+                ) {
                     Ok(_) => {
                         ResponseOutparam::set(response_out, Ok(response));
                         let out = body.write().expect("outgoing stream");
@@ -79,7 +83,7 @@ impl Guest for LifecycleHost {
                     });
 
                 log(Level::Info, "host", &format!("Update {instance_id}"));
-                match lifecycle::update(&instance_id, tier.as_ref(), requests.as_deref()) {
+                match lifecycle::update(&instance_id, tier.as_deref(), requests.as_deref()) {
                     Ok(_) => {
                         ResponseOutparam::set(response_out, Ok(response));
                     }
@@ -204,7 +208,7 @@ fn get_params(query: &querystring::QueryParams, key: &str) -> Option<Vec<String>
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "lifecycle-host-http",
     generate_all
 });

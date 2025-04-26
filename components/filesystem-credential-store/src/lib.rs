@@ -44,7 +44,7 @@ impl Guest for FilesystemCredentialStore {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "filesystem-credential-store",
     generate_all
 });

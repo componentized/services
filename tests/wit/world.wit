@@ -1,0 +1,100 @@
+package componentized:services-test-components;
+
+world stub-lifecycle {
+    include componentized:services/service-lifecycle;
+}
+
+world stub-credential-store {
+    export componentized:services/credential-store;
+    include wasi:logging/imports@0.1.0-draft;
+}
+
+world stub-credential-admin {
+    export componentized:services/credential-admin;
+    include wasi:logging/imports@0.1.0-draft;
+}
+
+world stub-client {
+    export greeter: interface {
+        greet: func(name: string) -> result<string, string>;
+    }
+    include wasi:config/imports@0.2.0-draft;
+    include wasi:logging/imports@0.1.0-draft;
+}
+
+world cli {
+    import componentized:services/credential-admin;
+    import componentized:services/credential-store;
+    import componentized:services/lifecycle;
+    import componentized:services/types;
+
+    import ops;
+    import componentized:config/factory;
+
+    include wasi:random/imports@0.2.3;
+    //include wasi:cli/command@0.2.3;
+}
+
+world lifecycle-router {
+    import filesystem-lifecycle: interface {
+        use componentized:services/types.{service-instance-id, service-binding-id, request, scope, tier, error};
+
+        provision: func(instance-id: service-instance-id, %type: string, tier: option<tier>, requests: option<list<request>>) -> result<_, error>;
+        update: func(instance-id: service-instance-id, tier: option<tier>, requests: option<list<request>>) -> result<_, error>;
+        destroy: func(instance-id: service-instance-id, retain: option<bool>) -> result<_, error>;
+        bind: func(binding-id: service-binding-id, instance-id: service-instance-id, scopes: option<list<scope>>) -> result<_, error>;
+        list-bindings: func(instance-id: service-instance-id) -> result<list<service-binding-id>, error>;
+        unbind: func(binding-id: service-binding-id, instance-id: service-instance-id) -> result<_, error>;
+    }
+    import keyvalue-lifecycle: interface {
+        use componentized:services/types.{service-instance-id, service-binding-id, request, scope, tier, error};
+        
+        provision: func(instance-id: service-instance-id, %type: string, tier: option<tier>, requests: option<list<request>>) -> result<_, error>;
+        update: func(instance-id: service-instance-id, tier: option<tier>, requests: option<list<request>>) -> result<_, error>;
+        destroy: func(instance-id: service-instance-id, retain: option<bool>) -> result<_, error>;
+        bind: func(binding-id: service-binding-id, instance-id: service-instance-id, scopes: option<list<scope>>) -> result<_, error>;
+        list-bindings: func(instance-id: service-instance-id) -> result<list<service-binding-id>, error>;
+        unbind: func(binding-id: service-binding-id, instance-id: service-instance-id) -> result<_, error>;
+    }
+    import componentized:services/credential-admin;
+    import componentized:services/credential-store;
+
+    export componentized:services/lifecycle;
+}
+
+world ops-router {
+    import filesystem-ops: interface {
+        use componentized:services/types.{error};
+    
+        %list: func(path: string) -> result<list<string>, error>;
+        read: func(path: string) -> result<list<u8>, error>;
+        write: func(path: string, data: list<u8>) -> result<_, error>;
+        move: func(from-path: string, to-path: string) -> result<_, error>;
+        delete: func(path: string) -> result<_, error>;
+    }
+    import keyvalue-ops: interface {
+        use componentized:services/types.{error};
+    
+        %list: func(path: string) -> result<list<string>, error>;
+        read: func(path: string) -> result<list<u8>, error>;
+        write: func(path: string, data: list<u8>) -> result<_, error>;
+        move: func(from-path: string, to-path: string) -> result<_, error>;
+        delete: func(path: string) -> result<_, error>;
+    }
+    include wasi:config/imports@0.2.0-draft;
+
+    export ops;
+}
+
+world filesystem-ops {
+    import wasi:filesystem/preopens@0.2.3;
+    import wasi:filesystem/types@0.2.3;
+
+    export ops;
+}
+
+world keyvalue-ops {
+    include wasi:keyvalue/imports@0.2.0-draft2;
+
+    export ops;
+}

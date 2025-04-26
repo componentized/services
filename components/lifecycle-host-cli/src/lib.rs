@@ -151,7 +151,7 @@ impl Guest for HostComponent {
                     })?,
                 };
 
-                lifecycle::provision(&instance_id, &type_, tier.as_ref(), requests.as_deref())
+                lifecycle::provision(&instance_id, &type_, tier.as_deref(), requests.as_deref())
                     .map_err(|e| {
                         log(Level::Error, "host", &format!("Error provisioning: {}", e))
                     })?;
@@ -171,7 +171,7 @@ impl Guest for HostComponent {
                     &format!("Updating service {}", instance_id),
                 );
 
-                lifecycle::update(&instance_id, tier.as_ref(), requests.as_deref())
+                lifecycle::update(&instance_id, tier.as_deref(), requests.as_deref())
                     .map_err(|e| log(Level::Error, "host", &format!("Error updating: {}", e)))
             }
             Commands::Destroy {
@@ -334,7 +334,7 @@ impl UuidIds {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "lifecycle-host-cli",
     generate_all
 });

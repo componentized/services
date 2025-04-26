@@ -48,7 +48,7 @@ impl Guest for FilesystemCredentialAdmin {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "filesystem-credential-admin",
     generate_all
 });

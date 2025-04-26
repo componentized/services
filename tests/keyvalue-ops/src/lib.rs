@@ -1,6 +1,6 @@
 #![no_main]
 
-use exports::componentized::services::ops::{Error, Guest};
+use exports::componentized::services_test_components::ops::{Error, Guest};
 use wasi::keyvalue::store;
 
 struct KeyvalueOps;
@@ -64,7 +64,7 @@ fn map_err(err: store::Error) -> Error {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "keyvalue-ops",
     generate_all
 });

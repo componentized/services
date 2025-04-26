@@ -1,6 +1,6 @@
 #![no_main]
 
-use exports::componentized::services::ops::{Error, Guest};
+use exports::componentized::services_test_components::ops::{Error, Guest};
 use std::fs;
 
 struct FilesystemOps;
@@ -32,7 +32,7 @@ impl Guest for FilesystemOps {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "filesystem-ops",
     generate_all
 });

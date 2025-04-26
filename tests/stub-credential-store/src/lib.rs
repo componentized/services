@@ -19,7 +19,7 @@ impl Guest for StubCredentialStore {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "stub-credential-store",
     generate_all
 });

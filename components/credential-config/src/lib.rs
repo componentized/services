@@ -46,7 +46,7 @@ fn config_err_map(err: store::Error) -> Error {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "credential-config",
     generate_all
 });

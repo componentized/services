@@ -1,5 +1,5 @@
 interface ops {
-    use types.{error};
+    use componentized:services/types.{error};
 
     %list: func(path: string) -> result<list<string>, error>;
     read: func(path: string) -> result<list<u8>, error>;

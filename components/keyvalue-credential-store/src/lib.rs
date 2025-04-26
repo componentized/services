@@ -64,7 +64,7 @@ impl Guest for KeyvalueCredentialStore {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "keyvalue-credential-store",
     generate_all
 });
