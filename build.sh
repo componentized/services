@@ -25,7 +25,6 @@ cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/lifecycle_host_http.wasm
 
 # filesystem components
 
-cp "${SCRIPT_DIR}/lib/deps/filesystem-chroot.wasm" "${SCRIPT_DIR}/lib/filesystem-client.wasm"
 cargo +nightly component build -p filesystem-lifecycle --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/filesystem_lifecycle.wasm" "${SCRIPT_DIR}/lib/filesystem-lifecycle.wasm"
 cargo component build -p filesystem-credential-store --release --target wasm32-wasip2
@@ -36,22 +35,11 @@ cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/filesystem_credential_admin.wasm"
 
 # valkey components
 
-cp "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" "${SCRIPT_DIR}/lib/keyvalue-client.wasm"
 cargo +nightly component build -p valkey-lifecycle --release --target wasm32-wasip2
 wac plug "${SCRIPT_DIR}/target/wasm32-wasip2/release/valkey_lifecycle.wasm" --plug "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" -o "${SCRIPT_DIR}/lib/valkey-lifecycle.wasm"
 wac plug "${SCRIPT_DIR}/lib/keyvalue-credential-store.wasm" --plug "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" -o "${SCRIPT_DIR}/lib/valkey-credential-store.wasm"
 wac plug "${SCRIPT_DIR}/lib/keyvalue-credential-admin.wasm" --plug "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" -o "${SCRIPT_DIR}/lib/valkey-credential-admin.wasm"
 
-# stub components
-
-cargo component build -p stub-lifecycle --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_lifecycle.wasm" "${SCRIPT_DIR}/lib/stub-lifecycle.wasm"
-cargo component build -p stub-client --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_client.wasm" "${SCRIPT_DIR}/lib/stub-client.wasm"
-cargo component build -p stub-credential-admin --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_credential_admin.wasm" "${SCRIPT_DIR}/lib/stub-credential-admin.wasm"
-cargo component build -p stub-credential-store --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_credential_store.wasm" "${SCRIPT_DIR}/lib/stub-credential-store.wasm"
 
 # webhook components
 
@@ -61,6 +49,8 @@ cargo component build -p webhook-credential-store --release --target wasm32-unkn
 cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/webhook_credential_store.wasm" "${SCRIPT_DIR}/lib/webhook-credential-store.wasm"
 
 # test components
+cp "${SCRIPT_DIR}/lib/deps/filesystem-chroot.wasm" "${SCRIPT_DIR}/lib/test/filesystem-client.wasm"
+cp "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" "${SCRIPT_DIR}/lib/test/keyvalue-client.wasm"
 cargo component build -p filesystem-ops --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/filesystem_ops.wasm" "${SCRIPT_DIR}/lib/test/filesystem-ops.wasm"
 cargo component build -p keyvalue-ops --release --target wasm32-unknown-unknown
@@ -72,6 +62,16 @@ cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/ops_router.wasm" "${SCRI
 cargo +nightly component build -p service-cli --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/service-cli.wasm" "${SCRIPT_DIR}/lib/test/service-cli.wasm"
 
+# stub components
+
+cargo component build -p stub-lifecycle --release --target wasm32-unknown-unknown
+cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_lifecycle.wasm" "${SCRIPT_DIR}/lib/test/stub-lifecycle.wasm"
+cargo component build -p stub-client --release --target wasm32-unknown-unknown
+cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_client.wasm" "${SCRIPT_DIR}/lib/test/stub-client.wasm"
+cargo component build -p stub-credential-admin --release --target wasm32-unknown-unknown
+cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_credential_admin.wasm" "${SCRIPT_DIR}/lib/test/stub-credential-admin.wasm"
+cargo component build -p stub-credential-store --release --target wasm32-unknown-unknown
+cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_credential_store.wasm" "${SCRIPT_DIR}/lib/test/stub-credential-store.wasm"
 
 wac compose -o "${SCRIPT_DIR}/lib/test/logging.wasm" \
     -d componentized:logger="${SCRIPT_DIR}/lib/deps/logger.wasm" \
@@ -90,9 +90,9 @@ wac compose -o "${SCRIPT_DIR}/lib/test/ops.wasm" \
     -d componentized:logging="${SCRIPT_DIR}/lib/logging.wasm" \
     -d componentized:credential-store="${SCRIPT_DIR}/lib/${cred_store_type}-credential-store.wasm" \
     -d componentized:credential-config="${SCRIPT_DIR}/lib/credential-config.wasm" \
-    -d componentized:filesystem-client="${SCRIPT_DIR}/lib/filesystem-client.wasm" \
+    -d componentized:filesystem-client="${SCRIPT_DIR}/lib/test/filesystem-client.wasm" \
     -d componentized:filesystem-ops="${SCRIPT_DIR}/lib/test/filesystem-ops.wasm" \
-    -d componentized:keyvalue-client="${SCRIPT_DIR}/lib/keyvalue-client.wasm" \
+    -d componentized:keyvalue-client="${SCRIPT_DIR}/lib/test/keyvalue-client.wasm" \
     -d componentized:keyvalue-ops="${SCRIPT_DIR}/lib/test/keyvalue-ops.wasm" \
     -d componentized:ops-router="${SCRIPT_DIR}/lib/test/ops-router.wasm" \
     "${SCRIPT_DIR}/tests/ops.wac"
