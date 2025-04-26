@@ -22,7 +22,7 @@ impl Guest for StubClient {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "stub-client",
     generate_all
 });

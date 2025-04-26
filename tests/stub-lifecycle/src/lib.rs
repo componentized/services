@@ -82,8 +82,8 @@ impl Lifecycle for StubService {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
-    world: "service-lifecycle",
+    path: "../wit",
+    world: "stub-lifecycle",
     generate_all
 });
 

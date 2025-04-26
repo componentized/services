@@ -10,6 +10,10 @@ cred_store_type="${1:-filesystem}"
 rm -rf "${SCRIPT_DIR}"/lib/*.wasm
 rm -rf "${SCRIPT_DIR}/lib/test" && mkdir -p "${SCRIPT_DIR}/lib/test"
 
+# wit interface
+
+wkg wit build -o "${SCRIPT_DIR}/lib/interface.wasm"
+
 # core components
 
 cargo component build -p credential-config --release --target wasm32-unknown-unknown

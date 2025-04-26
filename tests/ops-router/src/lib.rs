@@ -1,6 +1,6 @@
 #![no_main]
 
-use exports::componentized::services::ops::{Error, Guest};
+use exports::componentized::services_test_components::ops::{Error, Guest};
 
 struct Ops;
 
@@ -59,7 +59,7 @@ impl Guest for Ops {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "ops-router",
     generate_all
 });

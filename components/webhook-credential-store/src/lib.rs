@@ -107,7 +107,7 @@ impl Guest for WebhookCredentialStore {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "webhook-credential-store",
     generate_all
 });

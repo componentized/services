@@ -19,3 +19,7 @@ wkg oci pull ghcr.io/componentized/filesystem/chroot:v0.1.0 -o "${DEPS_DIR}/file
 wkg oci pull ghcr.io/componentized/cli/stdout-to-stderr:v0.1.0 -o "${DEPS_DIR}/stdout-to-stderr.wasm"
 wkg oci pull ghcr.io/componentized/valkey/valkey-client:v0.1.1 -o "${DEPS_DIR}/valkey-client.wasm"
 wkg oci pull ghcr.io/componentized/static-config/factory:v0.1.0 -o "${DEPS_DIR}/static-config-factory.wasm"
+
+wkg wit fetch
+(cd components && wkg wit fetch)
+(cd tests && wkg wit fetch)

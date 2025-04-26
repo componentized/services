@@ -22,7 +22,7 @@ export new componentized:cli {
     "componentized:services/credential-admin": credential-admin.credential-admin,
     "componentized:services/lifecycle": lifecycle.lifecycle,
 
-    "componentized:services/ops": ops.ops,
+    "componentized:services-test-components/ops": ops.ops,
     "componentized:config/factory": static-config-factory.factory,
 
     ...

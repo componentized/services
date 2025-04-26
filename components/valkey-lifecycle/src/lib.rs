@@ -247,7 +247,7 @@ impl From<valkey::Error> for Error {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "valkey-lifecycle",
     generate_all
 });

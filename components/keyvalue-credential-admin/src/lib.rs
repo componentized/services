@@ -63,7 +63,7 @@ impl Guest for KeyvalueCredentialAdmin {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "keyvalue-credential-admin",
     generate_all
 });

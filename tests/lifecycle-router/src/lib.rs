@@ -45,7 +45,7 @@ impl Guest for Lifecycle {
         tier: Option<Tier>,
         requests: Option<Vec<Request>>,
     ) -> Result<(), Error> {
-        let tier = tier.as_ref();
+        let tier = tier.as_deref();
         let requests = requests.as_deref();
         match Lifecycle::get_lifecycle(type_.clone())? {
             LifeycleType::Filesystem => {
@@ -73,7 +73,7 @@ impl Guest for Lifecycle {
         requests: Option<Vec<Request>>,
     ) -> Result<(), Error> {
         let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone())?;
-        let tier = tier.as_ref();
+        let tier = tier.as_deref();
         let requests = requests.as_deref();
         match Lifecycle::get_lifecycle(type_.clone())? {
             LifeycleType::Filesystem => filesystem_lifecycle::update(&instance_id, tier, requests),
@@ -124,7 +124,7 @@ impl Guest for Lifecycle {
 }
 
 wit_bindgen::generate!({
-    path: "../../wit",
+    path: "../wit",
     world: "lifecycle-router",
     generate_all
 });
