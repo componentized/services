@@ -2,8 +2,7 @@
 
 use chrono::DateTime;
 use componentized::services::credential_admin::{destroy, publish};
-use componentized::services::ids;
-use componentized::services::types::{Context, Credential, Request, Scope, Tier};
+use componentized::services::types::{Credential, Request, Scope, Tier};
 use exports::componentized::services::lifecycle::{
     Error, Guest as Lifecycle, ServiceBindingId, ServiceInstanceId,
 };
@@ -37,24 +36,24 @@ impl FilesystemService {
     fn get_bindings_path(instance_id: ServiceInstanceId) -> Result<PathBuf, Error> {
         Ok(FilesystemService::get_instance_path(instance_id)?.join(BINDINGS_PATH_COMPONENT))
     }
-    fn get_binding_path(binding_id: ServiceBindingId) -> Result<PathBuf, Error> {
-        let instance_id = ids::lookup_instance_id(&binding_id)?;
+    fn get_binding_path(
+        instance_id: ServiceInstanceId,
+        binding_id: ServiceBindingId,
+    ) -> Result<PathBuf, Error> {
         Ok(FilesystemService::get_bindings_path(instance_id)?.join(binding_id))
     }
 }
 
 impl Lifecycle for FilesystemService {
     fn provision(
-        ctx: Context,
+        instance_id: ServiceInstanceId,
         type_: String,
         tier: Option<Tier>,
         requests: Option<Vec<Request>>,
-    ) -> Result<ServiceInstanceId, Error> {
+    ) -> Result<(), Error> {
         if type_ != "filesystem" {
             Err(Error::from("only 'filesystem' types are supported"))?;
         }
-
-        let instance_id = ids::generate_instance_id(&ctx)?;
 
         if tier.is_some() {
             Err(Error::from("tier is not supported"))?;
@@ -68,7 +67,7 @@ impl Lifecycle for FilesystemService {
         fs::create_dir_all(FilesystemService::get_bindings_path(instance_id.clone())?)
             .map_err(|e| Error::from(e.to_string()))?;
 
-        Ok(instance_id)
+        Ok(())
     }
 
     fn update(
@@ -102,15 +101,14 @@ impl Lifecycle for FilesystemService {
     }
 
     fn bind(
-        ctx: Context,
+        binding_id: ServiceBindingId,
         instance_id: ServiceInstanceId,
         scopes: Option<Vec<Scope>>,
-    ) -> Result<ServiceBindingId, Error> {
+    ) -> Result<(), Error> {
         if scopes.is_some() {
             Err(Error::from("scopes are not supported"))?;
         }
 
-        let binding_id = ids::generate_binding_id(&ctx, &instance_id)?;
         let credentials = vec![
             Credential {
                 key: String::from("type"),
@@ -118,10 +116,13 @@ impl Lifecycle for FilesystemService {
             },
             Credential {
                 key: String::from("path"),
-                value: FilesystemService::get_binding_path(binding_id.clone())?
-                    .into_os_string()
-                    .into_string()
-                    .unwrap(),
+                value: FilesystemService::get_binding_path(
+                    instance_id.clone(),
+                    binding_id.clone(),
+                )?
+                .into_os_string()
+                .into_string()
+                .unwrap(),
             },
             Credential {
                 key: String::from("instance-id"),
@@ -144,18 +145,21 @@ impl Lifecycle for FilesystemService {
         #[allow(deprecated)]
         fs::soft_link(
             "../data",
-            FilesystemService::get_binding_path(binding_id.clone())?,
+            FilesystemService::get_binding_path(instance_id.clone(), binding_id.clone())?,
         )
         .map_err(|e| Error::from(e.to_string()))?;
         publish(&binding_id, credentials.as_slice())?;
 
-        Ok(binding_id)
+        Ok(())
     }
 
-    fn unbind(binding_id: ServiceBindingId) -> Result<(), Error> {
+    fn unbind(binding_id: ServiceBindingId, instance_id: ServiceInstanceId) -> Result<(), Error> {
         destroy(&binding_id)?;
-        fs::remove_file(FilesystemService::get_binding_path(binding_id)?)
-            .map_err(|e| Error::from(e.to_string()))
+        fs::remove_file(FilesystemService::get_binding_path(
+            instance_id,
+            binding_id,
+        )?)
+        .map_err(|e| Error::from(e.to_string()))
     }
 
     fn list_bindings(instance_id: ServiceInstanceId) -> Result<Vec<ServiceBindingId>, Error> {

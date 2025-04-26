@@ -1,11 +1,13 @@
 use clap::{command, Parser, Subcommand};
 use componentized::services::lifecycle;
 use componentized::services::types::{
-    Credential, Request, Scope, ServiceBindingId, ServiceInstanceId, Tier,
+    Credential, Error, Request, Scope, ServiceBindingId, ServiceInstanceId, Tier,
 };
 use exports::wasi::cli::run::Guest;
+use regex_lite::Regex;
 use wasi::cli::environment;
 use wasi::logging::logging::{log, Level};
+use wasi::random::random::get_random_bytes;
 
 /// componentized services CLI
 #[derive(Debug, Parser)] // requires `derive` feature
@@ -20,9 +22,9 @@ struct Cli {
 enum Commands {
     /// Provision a new service instance
     Provision {
-        /// Context for execution
+        /// Identifier for the service instance
         #[arg(long)]
-        context: Option<String>,
+        instance_id: Option<ServiceInstanceId>,
 
         /// Type of service
         #[arg(short, long("type"))]
@@ -68,9 +70,9 @@ enum Commands {
     /// Bind a service
     #[command(arg_required_else_help = true)]
     Bind {
-        /// Context for execution
+        /// Identifier for the service binding
         #[arg(long)]
-        context: Option<String>,
+        binding_id: Option<ServiceBindingId>,
 
         /// Identifier for the service instance
         #[arg(required = true)]
@@ -87,6 +89,10 @@ enum Commands {
         /// Identifier for the service binding
         #[arg(required = true)]
         binding_id: ServiceBindingId,
+
+        /// Identifier for the service instance
+        #[arg(required = true)]
+        instance_id: ServiceInstanceId,
     },
 
     /// List bindings
@@ -123,7 +129,7 @@ impl Guest for HostComponent {
     fn run() -> Result<(), ()> {
         match Cli::parse_from(environment::get_arguments().iter()).command {
             Commands::Provision {
-                context,
+                instance_id,
                 type_,
                 tier,
                 requests,
@@ -134,15 +140,23 @@ impl Guest for HostComponent {
                     &format!("Provisioning service: {type_}"),
                 );
 
-                let ctx = context.map(|c| c.into_bytes()).unwrap_or(vec![]);
+                let instance_id = match instance_id {
+                    Some(instance_id) => instance_id,
+                    None => UuidIds::generate_instance_id().map_err(|e| {
+                        log(
+                            Level::Error,
+                            "host",
+                            &format!("Error generating instance id: {}", e),
+                        )
+                    })?,
+                };
 
-                let service_id =
-                    lifecycle::provision(&ctx, &type_, tier.as_ref(), requests.as_deref())
-                        .map_err(|e| {
-                            log(Level::Error, "host", &format!("Error provisioning: {}", e))
-                        })?;
+                lifecycle::provision(&instance_id, &type_, tier.as_ref(), requests.as_deref())
+                    .map_err(|e| {
+                        log(Level::Error, "host", &format!("Error provisioning: {}", e))
+                    })?;
 
-                println!("{}", service_id);
+                println!("{}", instance_id);
 
                 Ok(())
             }
@@ -174,16 +188,25 @@ impl Guest for HostComponent {
                     .map_err(|e| log(Level::Error, "host", &format!("Error destroying: {}", e)))
             }
             Commands::Bind {
-                context,
+                binding_id,
                 instance_id,
                 scopes,
             } => {
                 log(Level::Info, "host", &format!("Binding to {}", instance_id));
 
-                let ctx = context.map(|c| c.into_bytes()).unwrap_or(vec![]);
+                let binding_id = match binding_id {
+                    Some(binding_id) => binding_id,
+                    None => UuidIds::generate_binding_id(&instance_id).map_err(|e| {
+                        log(
+                            Level::Error,
+                            "host",
+                            &format!("Error generating binding id: {}", e),
+                        )
+                    })?,
+                };
                 let scopes = scopes.as_deref();
 
-                let binding_id = lifecycle::bind(&ctx, &instance_id, scopes).map_err(|e| {
+                lifecycle::bind(&binding_id, &instance_id, scopes).map_err(|e| {
                     log(
                         Level::Error,
                         "host",
@@ -195,10 +218,13 @@ impl Guest for HostComponent {
 
                 Ok(())
             }
-            Commands::Unbind { binding_id } => {
+            Commands::Unbind {
+                binding_id,
+                instance_id,
+            } => {
                 log(Level::Info, "host", &format!("Unbinding {}", binding_id));
 
-                lifecycle::unbind(&binding_id).map_err(|e| {
+                lifecycle::unbind(&binding_id, &instance_id).map_err(|e| {
                     log(Level::Error, "host", &format!("Error unbinding: {}", e));
                 })
             }
@@ -232,6 +258,79 @@ macro_rules! println {
         wasi::cli::stdout::get_stdout().blocking_write_and_flush((std::format!($($arg)*) + "\n").as_bytes())
             .expect("failed writing to stdout")
     }};
+}
+
+pub(crate) struct UuidIds {}
+
+impl UuidIds {
+    pub fn generate() -> String {
+        // cribbed from the uuid crate
+        let bytes: [u8; 16] = get_random_bytes(16)
+            .try_into()
+            .expect("unexpected number of bytes");
+        let src = (u128::from_be_bytes(bytes) & 0xFFFFFFFFFFFF4FFFBFFFFFFFFFFFFFFF
+            | 0x40008000000000000000)
+            .to_be_bytes();
+
+        // lowercase letters
+        let lut: [u8; 16] = [
+            b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'a', b'b', b'c', b'd',
+            b'e', b'f',
+        ];
+        let groups = [(0, 8), (9, 13), (14, 18), (19, 23), (24, 36)];
+        let mut dst = [0; 36];
+
+        let mut group_idx = 0;
+        let mut i = 0;
+        while group_idx < 5 {
+            let (start, end) = groups[group_idx];
+            let mut j = start;
+            while j < end {
+                let x = src[i];
+                i += 1;
+
+                dst[j] = lut[(x >> 4) as usize];
+                dst[j + 1] = lut[(x & 0x0f) as usize];
+                j += 2;
+            }
+            if group_idx < 4 {
+                dst[end] = b'-';
+            }
+            group_idx += 1;
+        }
+        String::from_utf8(dst.into_iter().collect()).unwrap()
+    }
+
+    fn validate_instance_id(instance_id: &ServiceInstanceId) -> Result<(), Error> {
+        match Regex::new(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0]{12}$")
+            .unwrap()
+            .is_match(instance_id)
+        {
+            false => Err(Error::from(format!(
+                "expected instance-id to be a uuid, got: {}",
+                instance_id
+            ))),
+            true => Ok(()),
+        }
+    }
+
+    fn generate_instance_id() -> Result<ServiceInstanceId, Error> {
+        let uuid = Self::generate();
+        let instance_id: ServiceInstanceId = format!("{}-000000000000", uuid[0..23].to_string());
+        Ok(instance_id)
+    }
+
+    fn generate_binding_id(instance_id: &ServiceInstanceId) -> Result<ServiceBindingId, Error> {
+        Self::validate_instance_id(&instance_id)?;
+
+        let uuid = Self::generate();
+        let binding_id: ServiceBindingId = format!(
+            "{}-{}",
+            instance_id[0..23].to_string(),
+            uuid[24..].to_string()
+        );
+        Ok(binding_id)
+    }
 }
 
 wit_bindgen::generate!({

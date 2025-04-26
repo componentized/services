@@ -37,6 +37,6 @@ sleep 1
 componentized_services ops read bar
 sleep 1
 componentized_services ops delete bar
-componentized_services unbind ${binding_id}
+componentized_services unbind ${binding_id} ${instance_id}
 componentized_services list-bindings ${instance_id}
 componentized_services destroy ${instance_id} --retain false

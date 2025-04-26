@@ -1,7 +1,7 @@
 /// Service lifecycle manage a specific type of service on demand. Allowed tiers and requested
 /// attributes are defined by the specific implementation.
 interface lifecycle {
-    use types.{service-instance-id, service-binding-id, request, scope, tier, context, error};
+    use types.{service-instance-id, service-binding-id, request, scope, tier, error};
 
     /// Provision a new service instance based on the service type, tier and requested attributes.
     /// A lifecycle may be able to provision one or more types of services. If the service type
@@ -9,7 +9,7 @@ interface lifecycle {
     /// if the tier or attributes are invalid, or if the service could not be provisioned for any
     /// reason. A service-instance-id is returned on success which can be used to update the
     ///  service instance, create bindings, or destroy the service instance.
-    provision: func(ctx: context, %type: string, tier: option<tier>, requests: option<list<request>>) -> result<service-instance-id, error>;
+    provision: func(instance-id: service-instance-id, %type: string, tier: option<tier>, requests: option<list<request>>) -> result<_, error>;
 
     /// Update tier or requested attributes for an existing service. An error is returned
     /// if the tier or attributes are invalid, or if the service could not be updated for any
@@ -25,12 +25,12 @@ interface lifecycle {
     /// Scopes limit access to the service for the binding. The specific scopes available are
     /// defined by the service. An error is returned if the scopes are invalid or the binding could
     /// not be created for any reason.
-    bind: func(ctx: context, instance-id: service-instance-id, scopes: option<list<scope>>) -> result<service-binding-id, error>;
+    bind: func(binding-id: service-binding-id, instance-id: service-instance-id, scopes: option<list<scope>>) -> result<_, error>;
 
     /// List bindings for a service instance.
     list-bindings: func(instance-id: service-instance-id) -> result<list<service-binding-id>, error>;
 
     /// Unbind removes the binding. Expire any valid credentials and remove them from the
     /// credential store. An error is returned if the binding could not be released for any reason.
-    unbind: func(binding-id: service-binding-id) -> result<_, error>;
+    unbind: func(binding-id: service-binding-id, instance-id: service-instance-id) -> result<_, error>;
 }

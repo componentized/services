@@ -1,7 +1,7 @@
 #![no_main]
 
 use componentized::services::lifecycle;
-use componentized::services::types::{Request, ServiceInstanceId};
+use componentized::services::types::{Request, ServiceBindingId, ServiceInstanceId};
 use exports::wasi::http::incoming_handler::Guest;
 use wasi::http::types::{
     ErrorCode, Fields, IncomingRequest, OutgoingBody, OutgoingResponse, ResponseOutparam,
@@ -23,9 +23,9 @@ impl Guest for LifecycleHost {
 
         match path {
             "/provision" => {
-                let ctx: Vec<u8> = get_param(&query, "context")
-                    .map(|c| c.into_bytes())
-                    .unwrap_or(vec![]);
+                let instance_id: ServiceInstanceId = ServiceInstanceId::from(
+                    get_param(&query, "instance-id").unwrap_or("".to_string()),
+                );
                 let type_ = get_param(&query, "type").unwrap_or("".to_string());
                 let tier = get_param(&query, "tier");
                 let requests: Option<Vec<Request>> =
@@ -44,8 +44,9 @@ impl Guest for LifecycleHost {
                             .collect()
                     });
                 log(Level::Info, "host", &format!("Provision {type_}"));
-                match lifecycle::provision(&ctx, &type_, tier.as_ref(), requests.as_deref()) {
-                    Ok(instance_id) => {
+                match lifecycle::provision(&instance_id, &type_, tier.as_ref(), requests.as_deref())
+                {
+                    Ok(_) => {
                         ResponseOutparam::set(response_out, Ok(response));
                         let out = body.write().expect("outgoing stream");
                         out.blocking_write_and_flush(format!("{}\n", instance_id).as_bytes())
@@ -107,9 +108,9 @@ impl Guest for LifecycleHost {
                 }
             }
             "/bind" => {
-                let ctx: Vec<u8> = get_param(&query, "context")
-                    .map(|c| c.into_bytes())
-                    .unwrap_or(vec![]);
+                let binding_id: ServiceBindingId = ServiceBindingId::from(
+                    get_param(&query, "binding-id").unwrap_or("".to_string()),
+                );
                 let instance_id: ServiceInstanceId = ServiceInstanceId::from(
                     get_param(&query, "instance-id").unwrap_or("".to_string()),
                 );
@@ -119,8 +120,8 @@ impl Guest for LifecycleHost {
                     "host",
                     &format!("Bind {instance_id}: {scopes:?}"),
                 );
-                match lifecycle::bind(&ctx, &instance_id, scopes.as_deref()) {
-                    Ok(binding_id) => {
+                match lifecycle::bind(&binding_id, &instance_id, scopes.as_deref()) {
+                    Ok(_) => {
                         ResponseOutparam::set(response_out, Ok(response));
                         let out = body.write().expect("outgoing stream");
                         out.blocking_write_and_flush(format!("{}\n", binding_id).as_bytes())
@@ -151,11 +152,14 @@ impl Guest for LifecycleHost {
                 }
             }
             "/unbind" => {
-                let binding_id: ServiceInstanceId = ServiceInstanceId::from(
+                let binding_id: ServiceBindingId = ServiceBindingId::from(
                     get_param(&query, "binding-id").unwrap_or("".to_string()),
                 );
+                let instance_id: ServiceInstanceId = ServiceInstanceId::from(
+                    get_param(&query, "instance-id").unwrap_or("".to_string()),
+                );
                 log(Level::Info, "host", &format!("Unbind {binding_id}"));
-                match lifecycle::unbind(&binding_id) {
+                match lifecycle::unbind(&binding_id, &instance_id) {
                     Ok(_) => {
                         ResponseOutparam::set(response_out, Ok(response));
                     }

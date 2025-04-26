@@ -3,10 +3,9 @@
 use std::vec;
 
 use componentized::services::credential_admin;
-use componentized::services::ids;
 use componentized::services::types::{Request, Scope, Tier};
 use exports::componentized::services::lifecycle::{
-    Context, Error, Guest as Lifecycle, ServiceBindingId, ServiceInstanceId,
+    Error, Guest as Lifecycle, ServiceBindingId, ServiceInstanceId,
 };
 use wasi::logging::logging::{log, Level};
 
@@ -15,15 +14,14 @@ struct StubService {}
 
 impl Lifecycle for StubService {
     fn provision(
-        ctx: Context,
+        instance_id: ServiceInstanceId,
         type_: String,
         tier: Option<Tier>,
         requests: Option<Vec<Request>>,
-    ) -> Result<ServiceInstanceId, Error> {
-        let instance_id = ids::generate_instance_id(&ctx)?;
-        log(Level::Info, "lifecycle", &format!("provision: instance-id={instance_id} type={type_} tier={tier:?} requests={requests:?} context={ctx}", ctx = String::from_utf8_lossy(&ctx)));
+    ) -> Result<(), Error> {
+        log(Level::Info, "lifecycle", &format!("provision: instance-id={instance_id} type={type_} tier={tier:?} requests={requests:?}"));
 
-        Ok(instance_id)
+        Ok(())
     }
 
     fn update(
@@ -50,26 +48,25 @@ impl Lifecycle for StubService {
     }
 
     fn bind(
-        ctx: Context,
+        binding_id: ServiceBindingId,
         instance_id: ServiceInstanceId,
         scopes: Option<Vec<Scope>>,
-    ) -> Result<ServiceBindingId, Error> {
-        let binding_id = ids::generate_binding_id(&ctx, &instance_id)?;
+    ) -> Result<(), Error> {
         credential_admin::publish(&binding_id, &vec![])?;
         log(
             Level::Info,
             "lifecycle",
-            &format!("bind: instance-id={instance_id} binding-id={binding_id} scopes={scopes:?} ctx={ctx}", ctx = String::from_utf8_lossy(&ctx)),
+            &format!("bind: instance-id={instance_id} binding-id={binding_id} scopes={scopes:?}"),
         );
-        Ok(binding_id)
+        Ok(())
     }
 
-    fn unbind(binding_id: ServiceBindingId) -> Result<(), Error> {
+    fn unbind(binding_id: ServiceBindingId, instance_id: ServiceInstanceId) -> Result<(), Error> {
         credential_admin::destroy(&binding_id)?;
         log(
             Level::Info,
             "lifecycle",
-            &format!("unbind: binding-id={binding_id}"),
+            &format!("unbind: binding-id={binding_id} instance-id={instance_id}"),
         );
         Ok(())
     }

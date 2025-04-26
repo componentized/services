@@ -2,7 +2,7 @@
 
 use componentized::services::types::Credential;
 use exports::componentized::services::lifecycle::{
-    Context, Error, Guest, Request, Scope, ServiceBindingId, ServiceInstanceId, Tier,
+    Error, Guest, Request, Scope, ServiceBindingId, ServiceInstanceId, Tier,
 };
 
 struct Lifecycle;
@@ -40,18 +40,20 @@ enum LifeycleType {
 
 impl Guest for Lifecycle {
     fn provision(
-        ctx: Context,
+        instance_id: ServiceInstanceId,
         type_: String,
         tier: Option<Tier>,
         requests: Option<Vec<Request>>,
-    ) -> Result<ServiceInstanceId, Error> {
+    ) -> Result<(), Error> {
         let tier = tier.as_ref();
         let requests = requests.as_deref();
-        let instance_id = match Lifecycle::get_lifecycle(type_.clone())? {
+        match Lifecycle::get_lifecycle(type_.clone())? {
             LifeycleType::Filesystem => {
-                filesystem_lifecycle::provision(&ctx, &type_, tier, requests)
+                filesystem_lifecycle::provision(&instance_id, &type_, tier, requests)
             }
-            LifeycleType::Keyvalue => keyvalue_lifecycle::provision(&ctx, &type_, tier, requests),
+            LifeycleType::Keyvalue => {
+                keyvalue_lifecycle::provision(&instance_id, &type_, tier, requests)
+            }
         }?;
         // mild abuse of the credential store by stashing the type for an instance rather than a binding
         componentized::services::credential_admin::publish(
@@ -62,7 +64,7 @@ impl Guest for Lifecycle {
             }]
             .as_ref(),
         )?;
-        Ok(instance_id)
+        Ok(())
     }
 
     fn update(
@@ -90,23 +92,25 @@ impl Guest for Lifecycle {
     }
 
     fn bind(
-        ctx: Context,
+        binding_id: ServiceBindingId,
         instance_id: ServiceInstanceId,
         scopes: Option<Vec<Scope>>,
-    ) -> Result<ServiceBindingId, Error> {
+    ) -> Result<(), Error> {
         let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone())?;
         let scopes = scopes.as_deref();
         match Lifecycle::get_lifecycle(type_.clone())? {
-            LifeycleType::Filesystem => filesystem_lifecycle::bind(&ctx, &instance_id, scopes),
-            LifeycleType::Keyvalue => keyvalue_lifecycle::bind(&ctx, &instance_id, scopes),
+            LifeycleType::Filesystem => {
+                filesystem_lifecycle::bind(&binding_id, &instance_id, scopes)
+            }
+            LifeycleType::Keyvalue => keyvalue_lifecycle::bind(&binding_id, &instance_id, scopes),
         }
     }
 
-    fn unbind(binding_id: ServiceBindingId) -> Result<(), Error> {
+    fn unbind(binding_id: ServiceBindingId, instance_id: ServiceInstanceId) -> Result<(), Error> {
         let type_ = Lifecycle::get_type_for_binding_id(binding_id.clone())?;
         match Lifecycle::get_lifecycle(type_.clone())? {
-            LifeycleType::Filesystem => filesystem_lifecycle::unbind(&binding_id),
-            LifeycleType::Keyvalue => keyvalue_lifecycle::unbind(&binding_id),
+            LifeycleType::Filesystem => filesystem_lifecycle::unbind(&binding_id, &instance_id),
+            LifeycleType::Keyvalue => keyvalue_lifecycle::unbind(&binding_id, &instance_id),
         }
     }
 
