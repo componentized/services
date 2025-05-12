@@ -8,6 +8,6 @@ license = "Apache-2.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-clap = { version = "4.5.37", features = ["derive"] }
+clap = { version = "4.5.38", features = ["derive"] }
 regex-lite = "0.1"
 wit-bindgen = { workspace = true }
