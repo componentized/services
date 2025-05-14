@@ -1,8 +1,6 @@
 #![no_main]
 
-use exports::componentized::services::credential_store::{
-    Credential, Error, Guest, ServiceBindingId,
-};
+use exports::componentized::services::credential_store::{Credential, Error, Guest, ServiceId};
 use serde_json;
 use std::collections::HashMap;
 use std::fs;
@@ -14,20 +12,17 @@ const PATH_DEFAULT: &str = "services";
 pub(crate) struct FilesystemCredentialStore;
 
 impl FilesystemCredentialStore {
-    fn get_credential_path(binding_id: ServiceBindingId) -> Result<PathBuf, Error> {
+    fn get_credential_path(id: ServiceId) -> Result<PathBuf, Error> {
         let base_path = wasi::config::store::get(PATH_KEY)
             .map_err(|e| Error::from(e.to_string()))?
             .unwrap_or(String::from(PATH_DEFAULT));
 
-        Ok(PathBuf::new()
-            .join(base_path)
-            .join("credentials")
-            .join(binding_id))
+        Ok(PathBuf::new().join(base_path).join("credentials").join(id))
     }
 }
 
 impl Guest for FilesystemCredentialStore {
-    fn fetch(id: ServiceBindingId) -> Result<Vec<Credential>, Error> {
+    fn fetch(id: ServiceId) -> Result<Vec<Credential>, Error> {
         let bytes = fs::read(FilesystemCredentialStore::get_credential_path(id)?)
             .map_err(|e| Error::from(e.to_string()))?;
         let creds: HashMap<String, String> =
