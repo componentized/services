@@ -2,9 +2,7 @@
 
 use std::collections::HashMap;
 
-use exports::componentized::services::credential_admin::{
-    Credential, Error, Guest, ServiceBindingId,
-};
+use exports::componentized::services::credential_admin::{Credential, Error, Guest, ServiceId};
 use wasi::config::store as config;
 use wasi::http::{
     outgoing_handler::handle,
@@ -74,7 +72,7 @@ impl WebhookCredentialAdmin {
 }
 
 impl Guest for WebhookCredentialAdmin {
-    fn publish(binding_id: ServiceBindingId, credentials: Vec<Credential>) -> Result<(), Error> {
+    fn publish(id: ServiceId, credentials: Vec<Credential>) -> Result<(), Error> {
         let mut creds = HashMap::new();
         for cred in credentials {
             creds.insert(cred.key, cred.value);
@@ -84,7 +82,7 @@ impl Guest for WebhookCredentialAdmin {
         let response = Self::make_request(
             "/services/credentials/publish",
             vec![
-                ("service-binding-id", &binding_id),
+                ("service-id", &id),
                 ("service-credentials", &service_credentials),
             ],
         )?;
@@ -94,11 +92,9 @@ impl Guest for WebhookCredentialAdmin {
         }
     }
 
-    fn destroy(binding_id: ServiceBindingId) -> Result<(), Error> {
-        let response = Self::make_request(
-            "/services/credentials/destroy",
-            vec![("service-binding-id", &binding_id)],
-        )?;
+    fn destroy(id: ServiceId) -> Result<(), Error> {
+        let response =
+            Self::make_request("/services/credentials/destroy", vec![("service-id", &id)])?;
         match response.status() {
             204 => Ok(()),
             code => Err(Error::from(format!("unexpected http status {code}"))),

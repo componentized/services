@@ -1,9 +1,11 @@
 package componentized:services;
 
 interface types {
-  type service-instance-id = string;
+  type service-id = string;
 
-  type service-binding-id = string;
+  type service-instance-id = service-id;
+
+  type service-binding-id = service-id;
 
   record credential {
     key: string,
@@ -22,34 +24,34 @@ interface types {
   type error = string;
 }
 
-/// Credential Stores allow a client to fetch credentials for a specific binding. The platform
-/// typically implements this interface keeping the implementation details of credential storage
-/// hidden from the service lifecycle and users.
+/// Credential Stores allow a client to fetch credentials for a specific instance or binding. The
+/// platform typically implements this interface keeping the implementation details of credential
+/// storage hidden from the service lifecycle and users.
 interface credential-store {
-  use types.{service-binding-id, credential, error};
+  use types.{service-id, credential, error};
 
-  /// Fetch credentials from the store for a specific binding.
-  fetch: func(binding-id: service-binding-id) -> result<list<credential>, error>;
+  /// Fetch credentials from the store for a specific instance or binding.
+  fetch: func(id: service-id) -> result<list<credential>, error>;
 }
 
-/// Credential Admins manage the credentials for a binding. The platform typically implements this
-/// interface keeping the implementation details of credential storage hidden from the service
-/// lifecycle and users.
+/// Credential Admins manage the credentials for an instance or binding. The platform typically
+/// implements this interface keeping the implementation details of credential storage hidden from
+/// the service lifecycle and users.
 ///
 /// Some clients are not able to support rotating credentials. For those clients, creating a new
 /// binding is recommended. Once the previous credentials are no longer in use, the old binding can
 /// be unbound.
 interface credential-admin {
-  use types.{service-binding-id, credential, error};
+  use types.{service-id, credential, error};
 
-  /// Publish new or refreshed credentials to the store for use by the service binding. When
-  /// rotating credentials, the previously valid credentials should be revoked after calling
+  /// Publish new or refreshed credentials to the store for use by the service instance/binding.
+  /// When rotating credentials, the previously valid credentials should be revoked after calling
   /// publish with the new credentials.
-  publish: func(binding-id: service-binding-id, credentials: list<credential>) -> result<_, error>;
+  publish: func(id: service-id, credentials: list<credential>) -> result<_, error>;
 
-  /// Destroy credentials previously published for a binding. Valid credentials should be revoked
-  /// before calling destroy.
-  destroy: func(binding-id: service-binding-id) -> result<_, error>;
+  /// Destroy credentials previously published for a service instance or binding. Valid
+  /// credentials should be revoked before calling destroy.
+  destroy: func(id: service-id) -> result<_, error>;
 }
 
 /// Service lifecycle manage a specific type of service on demand. Allowed tiers and requested

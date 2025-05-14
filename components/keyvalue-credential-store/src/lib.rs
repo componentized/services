@@ -1,8 +1,6 @@
 #![no_main]
 
-use exports::componentized::services::credential_store::{
-    Credential, Error, Guest, ServiceBindingId,
-};
+use exports::componentized::services::credential_store::{Credential, Error, Guest, ServiceId};
 use serde_json;
 use std::collections::HashMap;
 use std::vec;
@@ -44,9 +42,9 @@ impl KeyvalueCredentialStore {
 }
 
 impl Guest for KeyvalueCredentialStore {
-    fn fetch(binding_id: ServiceBindingId) -> Result<Vec<Credential>, Error> {
+    fn fetch(id: ServiceId) -> Result<Vec<Credential>, Error> {
         let creds = Self::get_bucket()?
-            .get(&binding_id)
+            .get(&id)
             .map_err(Self::map_keyvalue_err)?
             .unwrap_or(vec![]);
 

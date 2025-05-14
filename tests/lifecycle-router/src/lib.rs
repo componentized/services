@@ -55,7 +55,6 @@ impl Guest for Lifecycle {
                 keyvalue_lifecycle::provision(&instance_id, &type_, tier, requests)
             }
         }?;
-        // mild abuse of the credential store by stashing the type for an instance rather than a binding
         componentized::services::credential_admin::publish(
             &instance_id,
             vec![Credential {
@@ -83,7 +82,6 @@ impl Guest for Lifecycle {
 
     fn destroy(instance_id: ServiceInstanceId, retain: Option<bool>) -> Result<(), Error> {
         let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone())?;
-        // mild abuse of the credential store by stashing the type for an instance rather than a binding
         componentized::services::credential_admin::destroy(&instance_id)?;
         match Lifecycle::get_lifecycle(type_.clone())? {
             LifeycleType::Filesystem => filesystem_lifecycle::destroy(&instance_id, retain),

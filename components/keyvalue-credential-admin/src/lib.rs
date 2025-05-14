@@ -1,8 +1,6 @@
 #![no_main]
 
-use exports::componentized::services::credential_admin::{
-    Credential, Error, Guest, ServiceBindingId,
-};
+use exports::componentized::services::credential_admin::{Credential, Error, Guest, ServiceId};
 use serde_json;
 use std::collections::HashMap;
 use wasi::keyvalue::store::{open, Bucket};
@@ -43,7 +41,7 @@ impl KeyvalueCredentialAdmin {
 }
 
 impl Guest for KeyvalueCredentialAdmin {
-    fn publish(binding_id: ServiceBindingId, credentials: Vec<Credential>) -> Result<(), Error> {
+    fn publish(id: ServiceId, credentials: Vec<Credential>) -> Result<(), Error> {
         let mut creds = HashMap::new();
         for Credential { key, value } in credentials {
             creds.insert(key, value);
@@ -51,13 +49,13 @@ impl Guest for KeyvalueCredentialAdmin {
         let creds = serde_json::to_vec(&creds).map_err(Self::map_serde_err)?;
 
         Self::get_bucket()?
-            .set(&binding_id, &creds)
+            .set(&id, &creds)
             .map_err(Self::map_keyvalue_err)
     }
 
-    fn destroy(binding_id: ServiceBindingId) -> Result<(), Error> {
+    fn destroy(id: ServiceId) -> Result<(), Error> {
         Self::get_bucket()?
-            .delete(&binding_id)
+            .delete(&id)
             .map_err(Self::map_keyvalue_err)
     }
 }
