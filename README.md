@@ -15,7 +15,7 @@ A WASM component services lifecycle.
 ## Build
 
 Prereqs:
-- a rust toolchain with a recent nightly (`rustup toolchain install nightly`)
+- a rust toolchain with `wasm32-unknown-unknown` and `wasm32-wasip2` targets (`rustup target add wasm32-unknown-unknown` and `rustup target add wasm32-wasip2`)
 - [`cargo component`](https://github.com/bytecodealliance/cargo-component)
 - [`static-config`](https://github.com/componentized/static-config)
 - [`wac`](https://github.com/bytecodealliance/wac)

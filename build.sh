@@ -29,7 +29,7 @@ cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/lifecycle_host_http.wasm
 
 # filesystem components
 
-cargo +nightly component build -p filesystem-lifecycle --release --target wasm32-wasip2
+cargo component build -p filesystem-lifecycle --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/filesystem_lifecycle.wasm" "${SCRIPT_DIR}/lib/filesystem-lifecycle.wasm"
 cargo component build -p filesystem-credential-store --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/filesystem_credential_store.wasm" "${SCRIPT_DIR}/lib/filesystem-credential-store.wasm"
@@ -39,7 +39,7 @@ cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/filesystem_credential_admin.wasm"
 
 # valkey components
 
-cargo +nightly component build -p valkey-lifecycle --release --target wasm32-wasip2
+cargo component build -p valkey-lifecycle --release --target wasm32-wasip2
 wac plug "${SCRIPT_DIR}/target/wasm32-wasip2/release/valkey_lifecycle.wasm" --plug "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" -o "${SCRIPT_DIR}/lib/valkey-lifecycle.wasm"
 wac plug "${SCRIPT_DIR}/lib/keyvalue-credential-store.wasm" --plug "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" -o "${SCRIPT_DIR}/lib/valkey-credential-store.wasm"
 wac plug "${SCRIPT_DIR}/lib/keyvalue-credential-admin.wasm" --plug "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" -o "${SCRIPT_DIR}/lib/valkey-credential-admin.wasm"
@@ -63,7 +63,7 @@ cargo component build -p lifecycle-router --release --target wasm32-unknown-unkn
 cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/lifecycle_router.wasm" "${SCRIPT_DIR}/lib/test/lifecycle-router.wasm"
 cargo component build -p ops-router --release --target wasm32-unknown-unknown
 cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/ops_router.wasm" "${SCRIPT_DIR}/lib/test/ops-router.wasm"
-cargo +nightly component build -p service-cli --release --target wasm32-wasip2
+cargo component build -p service-cli --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/service-cli.wasm" "${SCRIPT_DIR}/lib/test/service-cli.wasm"
 
 # stub components
