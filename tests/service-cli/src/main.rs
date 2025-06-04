@@ -141,7 +141,7 @@ enum CredentialCommands {
         id: ServiceId,
     },
 
-    /// Export credentials for a service instance binding as a wasi:config/store component
+    /// Export credentials for a service instance or binding as a wasi:config/store component
     #[command(arg_required_else_help = true)]
     Export {
         /// Identifier for the service instance or binding
