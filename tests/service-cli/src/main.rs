@@ -3,7 +3,7 @@ use componentized::services::credential_admin::{destroy, publish};
 use componentized::services::credential_store::fetch;
 use componentized::services::lifecycle;
 use componentized::services::types::{
-    Credential, Error, Request, Scope, ServiceBindingId, ServiceInstanceId, Tier,
+    Credential, Error, Request, Scope, ServiceBindingId, ServiceId, ServiceInstanceId, Tier,
 };
 use componentized::services_test_components::ops;
 use regex_lite::Regex;
@@ -113,40 +113,40 @@ struct CredentialsArgs {
 
 #[derive(Debug, Subcommand, Clone)]
 enum CredentialCommands {
-    /// Publish credentials for a binding
+    /// Publish credentials for a service instance or binding
     #[command(arg_required_else_help = true)]
     Publish {
-        /// Identifier for the service binding
+        /// Identifier for the service instance or binding
         #[arg(required = true)]
-        binding_id: ServiceBindingId,
+        id: ServiceId,
 
         /// Credentials to publish key=value
         #[arg(short, long)]
         credentials: Vec<Credential>,
     },
 
-    /// Destroy credentials for a binding
+    /// Destroy credentials for a service instance or binding
     #[command(arg_required_else_help = true)]
     Destroy {
-        /// Identifier for the service binding
+        /// Identifier for the service instance or binding
         #[arg(required = true)]
-        binding_id: ServiceBindingId,
+        id: ServiceId,
     },
 
-    /// Fetch credentials for a binding
+    /// Fetch credentials for a service instance or binding
     #[command(arg_required_else_help = true)]
     Fetch {
-        /// Identifier for the service binding
+        /// Identifier for the service instance or binding
         #[arg(required = true)]
-        binding_id: ServiceBindingId,
+        id: ServiceId,
     },
 
-    /// Export credentials for a binding as a wasi:config/store component
+    /// Export credentials for a service instance or binding as a wasi:config/store component
     #[command(arg_required_else_help = true)]
     Export {
-        /// Identifier for the service binding
+        /// Identifier for the service instance or binding
         #[arg(required = true)]
-        binding_id: ServiceBindingId,
+        id: ServiceId,
     },
 }
 
@@ -371,51 +371,48 @@ fn main() -> Result<(), ()> {
             Ok(())
         }
         Commands::Credentials(store) => match store.command {
-            CredentialCommands::Publish {
-                binding_id,
-                credentials,
-            } => {
-                eprintln!("Publish creds for {}", binding_id);
+            CredentialCommands::Publish { id, credentials } => {
+                eprintln!("Publish creds for {}", id);
 
-                publish(&binding_id, &credentials).map_err(|e: Error| {
-                    eprintln!("Error publishing {}: {}", binding_id, e);
+                publish(&id, &credentials).map_err(|e: Error| {
+                    eprintln!("Error publishing {}: {}", id, e);
                 })
             }
-            CredentialCommands::Destroy { binding_id } => {
-                eprintln!("Destroy creds for {}", binding_id);
+            CredentialCommands::Destroy { id } => {
+                eprintln!("Destroy creds for {}", id);
 
-                destroy(&binding_id).map_err(|e: Error| {
-                    eprintln!("Error destroying {}: {}", binding_id, e);
+                destroy(&id).map_err(|e: Error| {
+                    eprintln!("Error destroying {}: {}", id, e);
                 })
             }
-            CredentialCommands::Fetch { binding_id } => {
-                eprintln!("Fetch creds for {}", binding_id);
+            CredentialCommands::Fetch { id } => {
+                eprintln!("Fetch creds for {}", id);
 
-                let creds = fetch(&binding_id).map_err(|e: Error| {
-                    eprintln!("Error fetching {}: {}", binding_id, e);
+                let creds = fetch(&id).map_err(|e: Error| {
+                    eprintln!("Error fetching {}: {}", id, e);
                 })?;
                 println!("{:#?}", creds);
 
                 Ok(())
             }
-            CredentialCommands::Export { binding_id } => {
-                eprintln!("Export creds for {}", binding_id);
+            CredentialCommands::Export { id } => {
+                eprintln!("Export creds for {}", id);
 
-                let creds: Vec<(String, String)> = fetch(&binding_id)
+                let creds: Vec<(String, String)> = fetch(&id)
                     .map_err(|e: Error| {
-                        eprintln!("Error fetching {}: {}", binding_id, e);
+                        eprintln!("Error fetching {}: {}", id, e);
                     })?
                     .iter()
                     .map(|cred| (cred.key.clone(), cred.value.clone()))
                     .collect();
                 let config =
                     componentized::config::factory::build_component(&creds).map_err(|e| {
-                        eprintln!("Error creating config {}: {}", binding_id, e);
+                        eprintln!("Error creating config {}: {}", id, e);
                     })?;
 
                 let mut output = Box::new(io::stdout()) as Box<dyn Write>;
                 output.write_all(&config).map_err(|e| {
-                    eprintln!("Error writing config {}: {}", binding_id, e);
+                    eprintln!("Error writing config {}: {}", id, e);
                 })?;
 
                 Ok(())

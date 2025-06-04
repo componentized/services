@@ -2,9 +2,7 @@
 
 use std::collections::HashMap;
 
-use exports::componentized::services::credential_store::{
-    Credential, Error, Guest, ServiceBindingId,
-};
+use exports::componentized::services::credential_store::{Credential, Error, Guest, ServiceId};
 use wasi::config::store as config;
 use wasi::http::{
     outgoing_handler::handle,
@@ -76,11 +74,9 @@ impl WebhookCredentialStore {
 }
 
 impl Guest for WebhookCredentialStore {
-    fn fetch(binding_id: ServiceBindingId) -> Result<Vec<Credential>, Error> {
-        let response = Self::make_request(
-            "/services/credentials/fetch",
-            vec![("service-binding-id", &binding_id)],
-        )?;
+    fn fetch(id: ServiceId) -> Result<Vec<Credential>, Error> {
+        let response =
+            Self::make_request("/services/credentials/fetch", vec![("service-id", &id)])?;
         match response.status() {
             200 => {
                 let body = response.consume().unwrap();

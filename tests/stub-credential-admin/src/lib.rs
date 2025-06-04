@@ -1,28 +1,22 @@
 #![no_main]
 
-use exports::componentized::services::credential_admin::{
-    Credential, Error, Guest, ServiceBindingId,
-};
+use exports::componentized::services::credential_admin::{Credential, Error, Guest, ServiceId};
 use wasi::logging::logging::{log, Level};
 
 pub(crate) struct StubCredentialAdmin;
 
 impl Guest for StubCredentialAdmin {
-    fn publish(binding_id: ServiceBindingId, credentials: Vec<Credential>) -> Result<(), Error> {
+    fn publish(id: ServiceId, credentials: Vec<Credential>) -> Result<(), Error> {
         log(
             Level::Info,
             "credential-admin",
-            &format!("publish binding-id={binding_id} credentials={credentials:?}"),
+            &format!("publish id={id} credentials={credentials:?}"),
         );
         Ok(())
     }
 
-    fn destroy(binding_id: ServiceBindingId) -> Result<(), Error> {
-        log(
-            Level::Info,
-            "credential-admin",
-            &format!("destroy binding-id={binding_id}"),
-        );
+    fn destroy(id: ServiceId) -> Result<(), Error> {
+        log(Level::Info, "credential-admin", &format!("destroy id={id}"));
         Ok(())
     }
 }

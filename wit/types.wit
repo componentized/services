@@ -1,7 +1,8 @@
 
 interface types {
-    type service-instance-id = string;
-    type service-binding-id = string;
+    type service-id = string;
+    type service-instance-id = service-id;
+    type service-binding-id = service-id;
 
     record credential {
         key: string,
