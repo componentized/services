@@ -63,13 +63,13 @@ jobs:
         echo "PATH=${PATH}:${HOME}/.wasmtime/bin" >> "$GITHUB_ENV"
 
     - name: Download components.tar
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: components.tar
     - name: Extract components
       run: mkdir -p lib && tar -xvf components.tar -C lib
     - name: Download test-components.tar
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: test-components.tar
     - name: Extract test-components
@@ -102,7 +102,7 @@ jobs:
       id: get_version
       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
     - name: Download components.tar
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: components.tar
     - name: Extract components
