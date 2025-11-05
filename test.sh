@@ -13,7 +13,7 @@ if [ -z ${SKIP_BUILD+x} ]; then
 fi
 
 componentized_services() {
-    wasmtime run -Sconfig -Sinherit-network \
+    ${WASMTIME:-wasmtime} run -Sconfig -Sinherit-network \
         -Sconfig-var=path=services \
         --env log_context_kv2fs \
         -Sconfig-var=binding-id="${binding_id}" \

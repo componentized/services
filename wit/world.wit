@@ -6,7 +6,7 @@ world service-lifecycle {
 
     import wasi:clocks/monotonic-clock@0.2.3;
     import wasi:clocks/wall-clock@0.2.3;
-    import wasi:config/store@0.2.0-draft;
+    import wasi:config/store@0.2.0-rc.1;
     import wasi:filesystem/types@0.2.3;
     import wasi:filesystem/preopens@0.2.3;
     import wasi:logging/logging@0.1.0-draft;

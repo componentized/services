@@ -31,6 +31,7 @@ Prereqs:
 Prereqs:
 - build the components (see above)
 - access to a running [Valkey](https://valkey.io) server
+- [`wasmtime`](https://github.com/bytecodealliance/wasmtime) 41+ or dev
 
 ```sh
 ./demo.sh
