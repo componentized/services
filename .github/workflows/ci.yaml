@@ -33,18 +33,22 @@ jobs:
     - name: Check for drift in generated files
       run: git diff --exit-code .
     - name: Collect components.tar
+      if: always()
       run: tar -cvf ../components.tar *.wasm*
       working-directory: ./lib
     - name: Collect test-components.tar
+      if: always()
       run: tar -cvf ../../test-components.tar *.wasm*
       working-directory: ./lib/test
     - name: Upload components.tar
+      if: always()
       uses: actions/upload-artifact@v5
       with:
         name: components.tar
         path: components.tar
         retention-days: 7
     - name: Upload test-components.tar
+      if: always()
       uses: actions/upload-artifact@v5
       with:
         name: test-components.tar
