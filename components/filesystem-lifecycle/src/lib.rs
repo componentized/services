@@ -179,6 +179,7 @@ impl Lifecycle for FilesystemService {
 wit_bindgen::generate!({
     path: "../wit",
     world: "filesystem-lifecycle",
+    features: ["clocks-timezone"],
     generate_all
 });
 

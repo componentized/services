@@ -63,6 +63,7 @@ impl Guest for KeyvalueCredentialAdmin {
 wit_bindgen::generate!({
     path: "../wit",
     world: "keyvalue-credential-admin",
+    features: ["clocks-timezone"],
     generate_all
 });
 

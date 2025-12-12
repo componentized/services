@@ -249,6 +249,7 @@ impl From<valkey::Error> for Error {
 wit_bindgen::generate!({
     path: "../wit",
     world: "valkey-lifecycle",
+    features: ["clocks-timezone"],
     generate_all
 });
 
