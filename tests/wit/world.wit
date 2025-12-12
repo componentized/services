@@ -18,7 +18,7 @@ world stub-client {
     export greeter: interface {
         greet: func(name: string) -> result<string, string>;
     }
-    include wasi:config/imports@0.2.0-draft;
+    include wasi:config/imports@0.2.0-rc.1;
     include wasi:logging/imports@0.1.0-draft;
 }
 
@@ -31,8 +31,8 @@ world cli {
     import ops;
     import componentized:config/factory;
 
-    include wasi:random/imports@0.2.3;
-    //include wasi:cli/command@0.2.3;
+    include wasi:random/imports@0.2.6;
+    //include wasi:cli/command@0.2.6;
 }
 
 world lifecycle-router {
@@ -81,14 +81,14 @@ world ops-router {
         move: func(from-path: string, to-path: string) -> result<_, error>;
         delete: func(path: string) -> result<_, error>;
     }
-    include wasi:config/imports@0.2.0-draft;
+    include wasi:config/imports@0.2.0-rc.1;
 
     export ops;
 }
 
 world filesystem-ops {
-    import wasi:filesystem/preopens@0.2.3;
-    import wasi:filesystem/types@0.2.3;
+    import wasi:filesystem/preopens@0.2.6;
+    import wasi:filesystem/types@0.2.6;
 
     export ops;
 }

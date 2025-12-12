@@ -105,6 +105,7 @@ impl Guest for WebhookCredentialStore {
 wit_bindgen::generate!({
     path: "../wit",
     world: "webhook-credential-store",
+    features: ["clocks-timezone"],
     generate_all
 });
 

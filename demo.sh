@@ -4,9 +4,10 @@ set -o errexit
 set -o pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+WASMTIME=${WASMTIME:-wasmtime}
 
 componentized_services() {
-    wasmtime run -Sconfig -Sinherit-network \
+    ${WASMTIME} run -Sconfig -Sinherit-network \
         -Sconfig-var=path=services \
         -Sconfig-var=binding-id="${binding_id}" \
         --dir "${SCRIPT_DIR:-.}/tests/testdata"::/ \

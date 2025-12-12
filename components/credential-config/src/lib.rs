@@ -48,6 +48,7 @@ fn config_err_map(err: store::Error) -> Error {
 wit_bindgen::generate!({
     path: "../wit",
     world: "credential-config",
+    features: ["clocks-timezone"],
     generate_all
 });
 

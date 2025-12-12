@@ -210,6 +210,7 @@ fn get_params(query: &querystring::QueryParams, key: &str) -> Option<Vec<String>
 wit_bindgen::generate!({
     path: "../wit",
     world: "lifecycle-host-http",
+    features: ["clocks-timezone"],
     generate_all
 });
 

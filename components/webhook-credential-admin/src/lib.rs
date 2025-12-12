@@ -105,6 +105,7 @@ impl Guest for WebhookCredentialAdmin {
 wit_bindgen::generate!({
     path: "../wit",
     world: "webhook-credential-admin",
+    features: ["clocks-timezone"],
     generate_all
 });
 

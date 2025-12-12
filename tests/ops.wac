@@ -13,8 +13,8 @@ let filesystem-client = new componentized:filesystem-client {
     ...
 };
 let filesystem-ops = new componentized:filesystem-ops {
-    "wasi:filesystem/preopens@0.2.3": filesystem-client.preopens,
-    "wasi:filesystem/types@0.2.3": filesystem-client.types,
+    "wasi:filesystem/preopens@0.2.6": filesystem-client.preopens,
+    "wasi:filesystem/types@0.2.6": filesystem-client.types,
     ...
 };
 
