@@ -24,6 +24,8 @@ jobs:
       run: cargo binstall --force wac-cli
     - name: Install wkg
       run: cargo binstall --force wkg
+    - name: Install wasm-tools
+      run: cargo binstall --force wasm-tools
     - name: Update deps
       run: ./update-deps.sh
     - name: Build components
@@ -48,6 +50,14 @@ jobs:
         name: test-components.tar
         path: test-components.tar
         retention-days: 7
+    - name: Capture WIT
+      working-directory: ./lib
+      run: |
+        for component in *.wasm ; do
+          echo "::group::${component}"
+            wasm-tools component wit "${component}"
+          echo "::endgroup::"
+        done
 
   test:
     needs:
