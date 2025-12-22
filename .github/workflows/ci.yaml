@@ -67,9 +67,7 @@ jobs:
     - uses: actions/checkout@v6
     - name: Install wasmtime
       run: |
-        # TODO revert to standard reelase once v40 is available
-        # curl https://wasmtime.dev/install.sh -sSf | bash
-        curl https://wasmtime.dev/install.sh -sSf | bash /dev/stdin --version dev
+        curl https://wasmtime.dev/install.sh -sSf | bash
         echo "PATH=${PATH}:${HOME}/.wasmtime/bin" >> "$GITHUB_ENV"
 
     - name: Download components.tar
