@@ -336,6 +336,7 @@ impl UuidIds {
 wit_bindgen::generate!({
     path: "../wit",
     world: "lifecycle-host-cli",
+    features: ["clocks-timezone"],
     generate_all
 });
 

@@ -41,6 +41,7 @@ impl Guest for FilesystemCredentialStore {
 wit_bindgen::generate!({
     path: "../wit",
     world: "filesystem-credential-store",
+    features: ["clocks-timezone"],
     generate_all
 });
 

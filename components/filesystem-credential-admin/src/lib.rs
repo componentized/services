@@ -45,6 +45,7 @@ impl Guest for FilesystemCredentialAdmin {
 wit_bindgen::generate!({
     path: "../wit",
     world: "filesystem-credential-admin",
+    features: ["clocks-timezone"],
     generate_all
 });
 
