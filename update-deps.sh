@@ -23,3 +23,7 @@ wkg oci pull ghcr.io/componentized/static-config/factory:v0.2.0 -o "${DEPS_DIR}/
 wkg wit fetch
 (cd components && wkg wit fetch)
 (cd tests && wkg wit fetch)
+
+# TODO remove once wkg consumes wit-component 0.245
+perl -pi -e 's/ map\(/ %map\(/g' components/wit/deps/componentized-valkey/package.wit
+perl -pi -e 's/ map\(/ %map\(/g' tests/wit/deps/componentized-valkey/package.wit
