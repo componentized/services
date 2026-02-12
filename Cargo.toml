@@ -18,4 +18,4 @@ exclude = [
 [workspace.dependencies]
 chrono = { git = "https://github.com/chronotope/chrono.git", branch = "0.5.x" }
 serde_json = "1.0"
-wit-bindgen = "0.52.0"
+wit-bindgen = "0.53.0"
