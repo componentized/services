@@ -39,13 +39,13 @@ jobs:
       run: tar -cvf ../../test-components.tar *.wasm*
       working-directory: ./lib/test
     - name: Upload components.tar
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: components.tar
         path: components.tar
         retention-days: 7
     - name: Upload test-components.tar
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: test-components.tar
         path: test-components.tar
