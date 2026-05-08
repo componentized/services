@@ -2,6 +2,7 @@
 
 A WASM component services lifecycle.
 
+- [Architecture](#architecture)
 - [Build](#build)
 - [Run](#run)
 - [Community](#community)
@@ -11,6 +12,9 @@ A WASM component services lifecycle.
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
+## Architecture
+
+[![architecture diagram](./architecture.jpg)](./architecture.jpg)
 
 ## Build
 
