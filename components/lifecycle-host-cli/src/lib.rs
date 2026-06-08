@@ -1,4 +1,4 @@
-use clap::{command, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use componentized::services::lifecycle;
 use componentized::services::types::{
     Credential, Error, Request, Scope, ServiceBindingId, ServiceInstanceId, Tier,

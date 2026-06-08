@@ -1,4 +1,4 @@
-use clap::{command, Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use componentized::services::credential_admin::{destroy, publish};
 use componentized::services::credential_store::fetch;
 use componentized::services::lifecycle;
