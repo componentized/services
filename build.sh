@@ -16,66 +16,65 @@ wkg wit build -o "${SCRIPT_DIR}/lib/interface.wasm"
 
 # core components
 
-cargo component build -p credential-config --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/credential_config.wasm" "${SCRIPT_DIR}/lib/credential-config.wasm"
-cargo component build -p keyvalue-credential-admin --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/keyvalue_credential_admin.wasm" "${SCRIPT_DIR}/lib/keyvalue-credential-admin.wasm"
-cargo component build -p keyvalue-credential-store --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/keyvalue_credential_store.wasm" "${SCRIPT_DIR}/lib/keyvalue-credential-store.wasm"
-cargo component build -p lifecycle-host-cli --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/lifecycle_host_cli.wasm" "${SCRIPT_DIR}/lib/lifecycle-host-cli.wasm"
-cargo component build -p lifecycle-host-http --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/lifecycle_host_http.wasm" "${SCRIPT_DIR}/lib/lifecycle-host-http.wasm"
+cargo build -p credential-config --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/credential_config.wasm" -o "${SCRIPT_DIR}/lib/credential-config.wasm"
+cargo build -p keyvalue-credential-admin --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/keyvalue_credential_admin.wasm" -o "${SCRIPT_DIR}/lib/keyvalue-credential-admin.wasm"
+cargo build -p keyvalue-credential-store --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/keyvalue_credential_store.wasm" -o "${SCRIPT_DIR}/lib/keyvalue-credential-store.wasm"
+cargo build -p lifecycle-host-cli --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/lifecycle_host_cli.wasm" -o "${SCRIPT_DIR}/lib/lifecycle-host-cli.wasm"
+cargo build -p lifecycle-host-http --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/lifecycle_host_http.wasm" -o "${SCRIPT_DIR}/lib/lifecycle-host-http.wasm"
 
 # filesystem components
 
-cargo component build -p filesystem-lifecycle --release --target wasm32-wasip2
+cargo build -p filesystem-lifecycle --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/filesystem_lifecycle.wasm" "${SCRIPT_DIR}/lib/filesystem-lifecycle.wasm"
-cargo component build -p filesystem-credential-store --release --target wasm32-wasip2
+cargo build -p filesystem-credential-store --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/filesystem_credential_store.wasm" "${SCRIPT_DIR}/lib/filesystem-credential-store.wasm"
-cargo component build -p filesystem-credential-admin --release --target wasm32-wasip2
+cargo build -p filesystem-credential-admin --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/filesystem_credential_admin.wasm" "${SCRIPT_DIR}/lib/filesystem-credential-admin.wasm"
-
 
 # valkey components
 
-cargo component build -p valkey-lifecycle --release --target wasm32-wasip2
+cargo build -p valkey-lifecycle --release --target wasm32-wasip2
 wac plug "${SCRIPT_DIR}/target/wasm32-wasip2/release/valkey_lifecycle.wasm" --plug "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" -o "${SCRIPT_DIR}/lib/valkey-lifecycle.wasm"
 wac plug "${SCRIPT_DIR}/lib/keyvalue-credential-store.wasm" --plug "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" -o "${SCRIPT_DIR}/lib/valkey-credential-store.wasm"
 wac plug "${SCRIPT_DIR}/lib/keyvalue-credential-admin.wasm" --plug "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" -o "${SCRIPT_DIR}/lib/valkey-credential-admin.wasm"
 
-
 # webhook components
 
-cargo component build -p webhook-credential-admin --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/webhook_credential_admin.wasm" "${SCRIPT_DIR}/lib/webhook-credential-admin.wasm"
-cargo component build -p webhook-credential-store --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/webhook_credential_store.wasm" "${SCRIPT_DIR}/lib/webhook-credential-store.wasm"
+cargo build -p webhook-credential-admin --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/webhook_credential_admin.wasm" -o "${SCRIPT_DIR}/lib/webhook-credential-admin.wasm"
+cargo build -p webhook-credential-store --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/webhook_credential_store.wasm" -o "${SCRIPT_DIR}/lib/webhook-credential-store.wasm"
 
 # test components
+
 cp "${SCRIPT_DIR}/lib/deps/filesystem-chroot.wasm" "${SCRIPT_DIR}/lib/test/filesystem-client.wasm"
 cp "${SCRIPT_DIR}/lib/deps/valkey-client.wasm" "${SCRIPT_DIR}/lib/test/keyvalue-client.wasm"
-cargo component build -p filesystem-ops --release --target wasm32-wasip2
+cargo build -p filesystem-ops --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/filesystem_ops.wasm" "${SCRIPT_DIR}/lib/test/filesystem-ops.wasm"
-cargo component build -p keyvalue-ops --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/keyvalue_ops.wasm" "${SCRIPT_DIR}/lib/test/keyvalue-ops.wasm"
-cargo component build -p lifecycle-router --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/lifecycle_router.wasm" "${SCRIPT_DIR}/lib/test/lifecycle-router.wasm"
-cargo component build -p ops-router --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/ops_router.wasm" "${SCRIPT_DIR}/lib/test/ops-router.wasm"
-cargo component build -p service-cli --release --target wasm32-wasip2
+cargo build -p keyvalue-ops --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/keyvalue_ops.wasm" -o "${SCRIPT_DIR}/lib/test/keyvalue-ops.wasm"
+cargo build -p lifecycle-router --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/lifecycle_router.wasm" -o "${SCRIPT_DIR}/lib/test/lifecycle-router.wasm"
+cargo build -p ops-router --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/ops_router.wasm" -o "${SCRIPT_DIR}/lib/test/ops-router.wasm"
+cargo build -p service-cli --release --target wasm32-wasip2
 cp "${SCRIPT_DIR}/target/wasm32-wasip2/release/service-cli.wasm" "${SCRIPT_DIR}/lib/test/service-cli.wasm"
 
 # stub components
 
-cargo component build -p stub-lifecycle --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_lifecycle.wasm" "${SCRIPT_DIR}/lib/test/stub-lifecycle.wasm"
-cargo component build -p stub-client --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_client.wasm" "${SCRIPT_DIR}/lib/test/stub-client.wasm"
-cargo component build -p stub-credential-admin --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_credential_admin.wasm" "${SCRIPT_DIR}/lib/test/stub-credential-admin.wasm"
-cargo component build -p stub-credential-store --release --target wasm32-unknown-unknown
-cp "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_credential_store.wasm" "${SCRIPT_DIR}/lib/test/stub-credential-store.wasm"
+cargo build -p stub-lifecycle --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_lifecycle.wasm" -o "${SCRIPT_DIR}/lib/test/stub-lifecycle.wasm"
+cargo build -p stub-client --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_client.wasm" -o "${SCRIPT_DIR}/lib/test/stub-client.wasm"
+cargo build -p stub-credential-admin --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_credential_admin.wasm" -o "${SCRIPT_DIR}/lib/test/stub-credential-admin.wasm"
+cargo build -p stub-credential-store --release --target wasm32-unknown-unknown
+wasm-tools component new "${SCRIPT_DIR}/target/wasm32-unknown-unknown/release/stub_credential_store.wasm" -o "${SCRIPT_DIR}/lib/test/stub-credential-store.wasm"
 
 wac compose -o "${SCRIPT_DIR}/lib/test/logging.wasm" \
     -d componentized:logger="${SCRIPT_DIR}/lib/deps/logger.wasm" \

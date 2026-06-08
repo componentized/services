@@ -15,16 +15,25 @@ ifndef REPOSITORY
 endif
 	@$(eval FILE := $(@:publish-%=%))
 	@$(eval COMPONENT := $(FILE:%.wasm=%))
+# 	@$(eval DESCRIPTION := $(shell head -n 3 "lib/${FILE}.md" | tail -n 1))
 	@$(eval REVISION := $(shell git rev-parse HEAD)$(shell git diff --quiet HEAD && echo "+dirty"))
 	@$(eval TAG := $(shell echo "${VERSION}" | sed 's/[^a-zA-Z0-9_.\-]/--/g'))
 
-    # --annotation "org.opencontainers.image.description=${DESCRIPTION}" \
+# 			--annotation "org.opencontainers.image.description=${DESCRIPTION}" \
 
-	wkg oci push \
-        --annotation "org.opencontainers.image.title=${COMPONENT}" \
-        --annotation "org.opencontainers.image.version=${VERSION}" \
-        --annotation "org.opencontainers.image.source=https://github.com/componentized/services.git" \
-        --annotation "org.opencontainers.image.revision=${REVISION}" \
-        --annotation "org.opencontainers.image.licenses=Apache-2.0" \
-        "${REPOSITORY}/${COMPONENT}:${TAG}" \
-        "lib/${FILE}"
+	@echo "::group::${FILE} -> ${REPOSITORY}/${COMPONENT}:${TAG}"
+	@DIGEST=$$( \
+		wkg oci push \
+			--annotation "org.opencontainers.image.title=${COMPONENT}" \
+			--annotation "org.opencontainers.image.version=${VERSION}" \
+			--annotation "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}.git" \
+			--annotation "org.opencontainers.image.revision=${REVISION}" \
+			--annotation "org.opencontainers.image.licenses=Apache-2.0" \
+			"${REPOSITORY}/${COMPONENT}:${TAG}" \
+			"lib/${FILE}" \
+			2>&1 \
+			| tee /dev/stderr \
+			| grep -o 'sha256:[a-f0-9]\{64\}' \
+	) ; \
+	cosign sign --yes "${REPOSITORY}/${COMPONENT}:${TAG}@$${DIGEST}"
+	@echo "::endgroup::"
