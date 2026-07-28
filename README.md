@@ -25,7 +25,7 @@ Prereqs:
 - [`static-config`](https://github.com/componentized/static-config)
 - [`wasm-tools`](https://github.com/bytecodealliance/wasm-tools)
 - [`wac`](https://github.com/bytecodealliance/wac)
-- [`wkg`](https://github.com/bytecodealliance/wasm-pkg-tools)
+- [`wkg`](https://github.com/bytecodealliance/wasm-pkg-tools) 0.16+
 
 ```sh
 ./update-deps.sh

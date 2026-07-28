@@ -12,7 +12,7 @@ rm -rf "${SCRIPT_DIR}/lib/test" && mkdir -p "${SCRIPT_DIR}/lib/test"
 
 # wit interface
 
-wkg wit build -o "${SCRIPT_DIR}/lib/interface.wasm"
+wkg build -o "${SCRIPT_DIR}/lib/interface.wasm"
 
 # core components
 

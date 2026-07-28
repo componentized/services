@@ -20,10 +20,6 @@ wkg oci pull ghcr.io/componentized/cli/stdout-to-stderr:v0.1.1 -o "${DEPS_DIR}/s
 wkg oci pull ghcr.io/componentized/valkey/valkey-client:v0.2.2 -o "${DEPS_DIR}/valkey-client.wasm"
 wkg oci pull ghcr.io/componentized/static-config/factory:v0.2.0 -o "${DEPS_DIR}/static-config-factory.wasm"
 
-wkg wit fetch
-(cd components && wkg wit fetch)
-(cd tests && wkg wit fetch)
-
-# TODO remove once wkg consumes wit-component 0.245
-perl -pi -e 's/ map\(/ %map\(/g' components/wit/deps/componentized-valkey/package.wit
-perl -pi -e 's/ map\(/ %map\(/g' tests/wit/deps/componentized-valkey/package.wit
+wkg fetch
+(cd components && wkg fetch)
+(cd tests && wkg fetch)
