@@ -13,7 +13,7 @@ let lifecycle = new componentized:lifecycle {
 };
 
 export new componentized:lifecycle-host {
-    "componentized:services/lifecycle": lifecycle.lifecycle,
+    lifecycle: lifecycle.lifecycle,
     
     logging: logging.logging,
 
