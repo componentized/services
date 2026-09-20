@@ -1,4 +1,4 @@
-package componentized:services;
+package componentized:services@0.0.5-dev;
 
 interface types {
   type service-id = string;
