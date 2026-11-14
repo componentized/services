@@ -1,33 +1,21 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/rust
 {
-    "name": "services",
-    "dockerComposeFile": "docker-compose.yml",
-    "service": "devcontainer",
-    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-
-    // Use 'mounts' to make the cargo cache persistent in a Docker Volume.
-	"mounts": [
-		{
-			"source": "devcontainer-cargo-cache-${devcontainerId}",
-			"target": "/usr/local/cargo",
-			"type": "volume"
-		},
-		{
-			"source": "devcontainer-rustup-cache-${devcontainerId}",
-			"target": "/usr/local/rustup",
-			"type": "volume"
-		}
-	],
-
+	"name": "componentized-services",
+	// the dev container runs alongside a Valkey server, see docker-compose.yml
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "devcontainer",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": {},
+		"ghcr.io/devcontainers/features/docker-in-docker:4": {
+			"moby": false
+		},
 		"ghcr.io/devcontainers/features/github-cli:1": {}
 	},
-
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "cargo check",
-
+	"postCreateCommand": "./.devcontainer/init.sh",
 	// Configure tool-specific properties.
 	"customizations": {
 		// Configure properties specific to VS Code.
@@ -38,16 +26,8 @@
 			},
 			"extensions": [
 				"bytecodealliance.wit-idl",
-				"github.vscode-github-actions",
-				"ms-azuretools.vscode-containers",
-				"rust-lang.rust-analyzer",
-				"streetsidesoftware.code-spell-checker",
-				"tamasfe.even-better-toml",
-				"vadimcn.vscode-lldb"
+				"tamasfe.even-better-toml"
 			]
 		}
 	}
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
 }

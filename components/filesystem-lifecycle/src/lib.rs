@@ -1,5 +1,3 @@
-#![no_main]
-
 use chrono::DateTime;
 use componentized::services::credential_admin::{destroy, publish};
 use componentized::services::types::{Credential, Request, Scope, Tier};

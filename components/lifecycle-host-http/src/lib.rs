@@ -1,5 +1,3 @@
-#![no_main]
-
 use componentized::services::lifecycle;
 use componentized::services::types::{Request, ServiceBindingId, ServiceInstanceId};
 use exports::wasi::http::incoming_handler::Guest;

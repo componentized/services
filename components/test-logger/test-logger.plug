@@ -1,0 +1,3 @@
+# the socket, then each plug
+dep-componentized-logging-levels
+dep-componentized-logging-to-stdout

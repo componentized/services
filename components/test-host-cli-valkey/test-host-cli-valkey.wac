@@ -1,0 +1,21 @@
+package componentized:service;
+
+let logging = new local:test-logging {
+    ...
+};
+
+let credential-admin = new local:valkey-credential-admin {
+    ...
+};
+let lifecycle = new local:valkey-lifecycle {
+    credential-admin: credential-admin.credential-admin,
+    ...
+};
+
+export new local:lifecycle-host-cli {
+    lifecycle: lifecycle.lifecycle,
+    
+    logging: logging.logging,
+
+    ...
+}...;

@@ -18,29 +18,32 @@ A WASM component services lifecycle.
 
 ## Build
 
+The components are built with the [componentized build](https://github.com/componentized/build), synced into [`build/`](./build), which installs the tools it needs.
+
 A [dev container](https://containers.dev) is available that contains the necessary tools and configuration out of the box.
 
 Prereqs:
-- a rust toolchain
-- [`static-config`](https://github.com/componentized/static-config)
-- [`wasm-tools`](https://github.com/bytecodealliance/wasm-tools)
-- [`wac`](https://github.com/bytecodealliance/wac)
-- [`wkg`](https://github.com/bytecodealliance/wasm-pkg-tools) 0.16+
+- a rust toolchain, with the targets in [`rust-toolchain.toml`](./rust-toolchain.toml)
+- `make` and `jq`
+- [`cargo binstall`](https://github.com/cargo-bins/cargo-binstall), optional, to install prebuilt tools
 
 ```sh
-./update-deps.sh
-./build.sh
+make
 ```
+
+builds the interface and each component into `target/components`, and runs the tests. Most components are built for `wasm32-unknown-unknown`, the filesystem components, the valkey lifecycle and the test cli for `wasm32-wasip2`, named in their `Cargo.toml`. Components prefixed with `test-` are for the tests, `dep-` are pulled from other repositories, and `internal-` are composed into other components, none of them are published.
 
 ## Run
 
 Prereqs:
 - build the components (see above)
-- access to a running [Valkey](https://valkey.io) server
+- [Docker](https://www.docker.com), to run a [Valkey](https://valkey.io) server
 
 ```sh
-./demo.sh
+make test-integration
 ```
+
+runs the services cli, [`test-cli`](./components/test-cli/), through the lifecycle of a `filesystem` service with `make test-filesystem`, and of a `valkey` service with `make test-valkey`, against a Valkey server in a container.
 
 ## Community
 

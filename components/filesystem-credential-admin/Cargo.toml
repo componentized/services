@@ -10,3 +10,7 @@ crate-type = ["cdylib"]
 [dependencies]
 serde_json = { workspace = true }
 wit-bindgen = { workspace = true }
+
+# the rust target the build builds the component for, see build/build.mk
+[package.metadata.componentized]
+target = "wasm32-wasip2"

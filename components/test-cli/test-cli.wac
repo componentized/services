@@ -1,0 +1,29 @@
+package componentized:service;
+
+let credential-store = new local:filesystem-credential-store {
+    ...
+};
+let credential-admin = new local:filesystem-credential-admin {
+    ...
+};
+let lifecycle = new local:test-lifecycle {
+    credential-admin: credential-admin.credential-admin,
+    credential-store: credential-store.credential-store,
+    ...
+};
+
+let ops = new local:test-ops {
+    ...
+};
+let static-config-factory = new local:dep-componentized-static-config-factory {};
+
+export new local:test-service-cli {
+    credential-store: credential-store.credential-store,
+    credential-admin: credential-admin.credential-admin,
+    lifecycle: lifecycle.lifecycle,
+
+    ops: ops.ops,
+    factory: static-config-factory.factory,
+
+    ...
+}.run;
