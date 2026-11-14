@@ -1,0 +1,15 @@
+[package]
+name = "test-filesystem-ops"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = { workspace = true }
+
+# the rust target the build builds the component for, see build/build.mk
+[package.metadata.componentized]
+target = "wasm32-wasip2"

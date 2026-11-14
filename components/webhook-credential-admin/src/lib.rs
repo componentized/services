@@ -1,5 +1,3 @@
-#![no_main]
-
 use std::collections::HashMap;
 
 use exports::componentized::services::credential_admin::{Credential, Error, Guest, ServiceId};

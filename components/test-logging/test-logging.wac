@@ -1,0 +1,11 @@
+package componentized:logging;
+
+let logger = new local:test-logger {
+    store: new local:test-app-config {}.store,
+    stdout: new local:dep-componentized-cli-stdout-to-stderr {
+        ...
+    }.stdout,
+    ...
+};
+
+export logger...;

@@ -6,13 +6,26 @@ license = "Apache-2.0"
 
 [workspace]
 members = [
-    "components/*",
-    "tests/*",
-]
-exclude = [
-    "components/wit",
-    "tests/wit",
-    "tests/testdata",
+    "components/credential-config",
+    "components/filesystem-credential-admin",
+    "components/filesystem-credential-store",
+    "components/filesystem-lifecycle",
+    "components/internal-valkey-lifecycle",
+    "components/keyvalue-credential-admin",
+    "components/keyvalue-credential-store",
+    "components/lifecycle-host-cli",
+    "components/lifecycle-host-http",
+    "components/test-filesystem-ops",
+    "components/test-keyvalue-ops",
+    "components/test-lifecycle-router",
+    "components/test-ops-router",
+    "components/test-service-cli",
+    "components/test-stub-client",
+    "components/test-stub-credential-admin",
+    "components/test-stub-credential-store",
+    "components/test-stub-lifecycle",
+    "components/webhook-credential-admin",
+    "components/webhook-credential-store",
 ]
 
 [workspace.dependencies]

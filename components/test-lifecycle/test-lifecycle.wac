@@ -1,0 +1,16 @@
+package componentized:service-cli-wired;
+
+let filesystem-lifecycle = new local:filesystem-lifecycle {
+    ...
+};
+let keyvalue-lifecycle = new local:valkey-lifecycle {
+    ...
+};
+
+let lifecycle = new local:test-lifecycle-router {
+    filesystem-lifecycle: filesystem-lifecycle.lifecycle,
+    keyvalue-lifecycle: keyvalue-lifecycle.lifecycle,
+    ...
+};
+
+export lifecycle...;

@@ -1,5 +1,3 @@
-#![no_main]
-
 use componentized::services::credential_store::fetch;
 use exports::wasi::config::store::{Error, Guest};
 use wasi::config::store;

@@ -1,5 +1,3 @@
-#![no_main]
-
 use exports::componentized::services::credential_store::{Credential, Error, Guest, ServiceId};
 use serde_json;
 use std::collections::HashMap;

@@ -1,11 +1,11 @@
 version: 2
 updates:
-- package-ecosystem: github-actions
+- package-ecosystem: cargo
   directory: "/"
   schedule:
     interval: daily
 - package-ecosystem: cargo
-  directory: "/"
+  directory: "/tools"
   schedule:
     interval: daily
 - package-ecosystem: rust-toolchain
