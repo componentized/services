@@ -1,2 +1,2 @@
-ghcr.io/componentized/filesystem/chroot:0.2.1@sha256:6792bf81177318f275fec1ff612c701412e50f712ccf1aa8bb8af63678b43743
-ghcr.io/componentized/filesystem/chroot:0.2.1@sha256:6792bf81177318f275fec1ff612c701412e50f712ccf1aa8bb8af63678b43743
+ghcr.io/componentized/filesystem/chroot:0.3.0-dev@sha256:1d92865073b2f4bd12769d3199abaea70d6b4cccdfe0f57524f609aa5dd7549e
+ghcr.io/componentized/filesystem/chroot:0.3.0-dev_debug@sha256:4126186ad7f77d19748c8a144077f60dbd7ae71d21b00fe13104860d179f4a9f
