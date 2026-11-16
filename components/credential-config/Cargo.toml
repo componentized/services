@@ -8,5 +8,4 @@ license = "Apache-2.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-serde_json = { workspace = true }
 wit-bindgen = { workspace = true }
