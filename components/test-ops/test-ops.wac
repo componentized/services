@@ -13,8 +13,8 @@ let filesystem-client = new local:dep-componentized-filesystem-chroot {
     ...
 };
 let filesystem-ops = new local:test-filesystem-ops {
-    "wasi:filesystem/preopens@0.2.12": filesystem-client.preopens,
-    "wasi:filesystem/types@0.2.12": filesystem-client.types,
+    "wasi:filesystem/preopens@0.3.0": filesystem-client.preopens,
+    "wasi:filesystem/types@0.3.0": filesystem-client.types,
     ...
 };
 
@@ -23,7 +23,7 @@ let keyvalue-client = new local:dep-componentized-valkey-valkey-client {
     ...
 };
 let keyvalue-ops = new local:test-keyvalue-ops {
-    "wasi:keyvalue/store@0.2.0-draft2": keyvalue-client["wasi:keyvalue/store@0.2.0-draft2"],
+    "wasmcloud:keyvalue/store@0.2.0": keyvalue-client["wasmcloud:keyvalue/store@0.2.0"],
     ...
 };
 

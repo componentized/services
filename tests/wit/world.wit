@@ -23,16 +23,12 @@ world stub-client {
 }
 
 world cli {
-    import componentized:services/credential-admin@0.0.5-dev;
-    import componentized:services/credential-store@0.0.5-dev;
-    import componentized:services/lifecycle@0.0.5-dev;
-    import componentized:services/types@0.0.5-dev;
+    include componentized:services/imports@0.0.5-dev;
 
-    import ops;
-    import componentized:config/factory;
+    include componentized:static-config/imports@0.3.0;
 
-    include wasi:random/imports@0.2.6;
-    //include wasi:cli/command@0.2.6;
+    include wasi:random/imports@0.3.0;
+    include wasi:cli/command@0.3.0;
 }
 
 world lifecycle-router {
@@ -87,14 +83,13 @@ world ops-router {
 }
 
 world filesystem-ops {
-    import wasi:filesystem/preopens@0.2.6;
-    import wasi:filesystem/types@0.2.6;
+    include wasi:filesystem/imports@0.3.0;
 
     export ops;
 }
 
 world keyvalue-ops {
-    include wasi:keyvalue/imports@0.2.0-draft2;
+    include wasmcloud:keyvalue/imports@0.2.0;
 
     export ops;
 }

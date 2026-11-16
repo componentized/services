@@ -6,7 +6,8 @@ world filesystem-lifecycle {
 
 world valkey-lifecycle {
     include componentized:services/service-lifecycle@0.0.5-dev;
-    import componentized:valkey/store;
+    import componentized:valkey/connector@0.3.0-dev;
+    import componentized:valkey/commands@0.3.0-dev;
 }
 
 world credential-config {
@@ -19,17 +20,17 @@ world credential-config {
 
 // lifecycle hosts
 world lifecycle-host-cli {
-    export wasi:cli/run@0.2.6;
+    export wasi:cli/run@0.3.0;
 
     import componentized:services/lifecycle@0.0.5-dev;
     
     include wasi:logging/imports@0.1.0-draft;
-    include wasi:cli/imports@0.2.6;
+    include wasi:cli/imports@0.3.0;
 }
 
 world lifecycle-host-http {
     import componentized:services/lifecycle@0.0.5-dev;
-    export wasi:http/incoming-handler@0.2.6;
+    export wasi:http/handler@0.3.0;
     
     include wasi:logging/imports@0.1.0-draft;
 }
@@ -40,40 +41,40 @@ world filesystem-credential-store {
     export componentized:services/credential-store@0.0.5-dev;
 
     include wasi:config/imports@0.2.0-rc.1;
-    include wasi:filesystem/imports@0.2.6;
+    include wasi:filesystem/imports@0.3.0;
 }
 
 world filesystem-credential-admin {
     export componentized:services/credential-admin@0.0.5-dev;
 
     include wasi:config/imports@0.2.0-rc.1;
-    include wasi:filesystem/imports@0.2.6;
+    include wasi:filesystem/imports@0.3.0;
 }
 
 world keyvalue-credential-store {
     export componentized:services/credential-store@0.0.5-dev;
 
     include wasi:config/imports@0.2.0-rc.1;
-    include wasi:keyvalue/imports@0.2.0-draft2;
+    include wasmcloud:keyvalue/imports@0.2.0;
 }
 
 world keyvalue-credential-admin {
     export componentized:services/credential-admin@0.0.5-dev;
 
     include wasi:config/imports@0.2.0-rc.1;
-    include wasi:keyvalue/imports@0.2.0-draft2;
+    include wasmcloud:keyvalue/imports@0.2.0;
 }
 
 world webhook-credential-admin {
     export componentized:services/credential-admin@0.0.5-dev;
-    include wasi:http/imports@0.2.6;
+    import wasi:http/handler@0.3.0;
     include wasi:config/imports@0.2.0-rc.1;
     include wasi:logging/imports@0.1.0-draft;
 }
 
 world webhook-credential-store {
     export componentized:services/credential-store@0.0.5-dev;
-    include wasi:http/imports@0.2.6;
+    import wasi:http/handler@0.3.0;
     include wasi:config/imports@0.2.0-rc.1;
     include wasi:logging/imports@0.1.0-draft;
 }
