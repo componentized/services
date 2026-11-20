@@ -31,7 +31,7 @@ Prereqs:
 make
 ```
 
-builds the interface and each component into `target/components`, and runs the tests. Most components are built for `wasm32-unknown-unknown`, the filesystem components, the valkey lifecycle and the test cli for `wasm32-wasip2`, named in their `Cargo.toml`. Components prefixed with `test-` are for the tests, `dep-` are pulled from other repositories, and `internal-` are composed into other components, none of them are published.
+builds the interface and each component into `target/components`, and runs the tests. The components are built for `wasm32-unknown-unknown`, calling the WASI interfaces they import directly rather than through std. Components prefixed with `test-` are for the tests, `dep-` are pulled from other repositories, and `internal-` are composed into other components, none of them are published.
 
 ## Run
 

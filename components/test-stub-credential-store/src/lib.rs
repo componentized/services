@@ -4,7 +4,7 @@ use wasi::logging::logging::{log, Level};
 pub(crate) struct StubCredentialStore;
 
 impl Guest for StubCredentialStore {
-    fn fetch(id: ServiceId) -> Result<Vec<Credential>, Error> {
+    async fn fetch(id: ServiceId) -> Result<Vec<Credential>, Error> {
         log(Level::Info, "credential-store", &format!("fetch id={id}"));
         Ok(vec![])
     }

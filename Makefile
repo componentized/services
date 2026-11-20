@@ -13,7 +13,8 @@ $(foreach component,$(patsubst components/%/Cargo.toml,%,$(wildcard components/t
 # runs the services cli with the given arguments, in a shell where $$binding_id is the binding the
 # ops use and $$config the config of the service, e.g. `$(call services,provision --type valkey)`.
 # The services, their bindings and credentials are kept in tests/testdata, the root of the filesystem.
-services = $(WASMTIME) run -Sconfig -Sinherit-network \
+services = $(WASMTIME) run -Sconfig -Sinherit-network -Sallow-ip-name-lookup \
+	-Wcomponent-model-map -Wcomponent-model-implements -Wcomponent-model-threading \
 	-Sconfig-var=path=services \
 	-Sconfig-var=binding-id="$${binding_id}" \
 	$${config} \

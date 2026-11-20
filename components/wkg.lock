@@ -3,13 +3,22 @@
 version = 1
 
 [[packages]]
+name = "componentized:secrets"
+registry = "componentized.dev"
+
+[[packages.versions]]
+requirement = "=0.1.1"
+version = "0.1.1"
+digest = "sha256:2de7f08de0382768ea3aa7dc13eaafb6727f43043d5b50248f2ee47391985f03"
+
+[[packages]]
 name = "componentized:valkey"
 registry = "componentized.dev"
 
 [[packages.versions]]
 requirement = "=0.3.0-dev"
 version = "0.3.0-dev"
-digest = "sha256:b0112726573b842edf66d648068d459ae98dc1a5b297d14680d200b20f7fb37b"
+digest = "sha256:2ac63302bfd9f39087df6249ed93270a485f04312b2073b35ab362a693d62626"
 
 [[packages]]
 name = "wasi:cli"

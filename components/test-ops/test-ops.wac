@@ -8,8 +8,13 @@ let credential-config = new local:credential-config {
     ...
 };
 
-let filesystem-client = new local:dep-componentized-filesystem-chroot {
+// the chroot is configured with the binding's `path`, from the secrets credential-config exports
+let filesystem-config = new local:test-filesystem-chroot-config {
     store: credential-config.store,
+    ...
+};
+let filesystem-client = new local:dep-componentized-filesystem-chroot {
+    store: filesystem-config.store,
     ...
 };
 let filesystem-ops = new local:test-filesystem-ops {
@@ -18,11 +23,12 @@ let filesystem-ops = new local:test-filesystem-ops {
     ...
 };
 
-let keyvalue-client = new local:dep-componentized-valkey-valkey-client {
+let keyvalue-client = new local:dep-componentized-valkey-client {
     store: credential-config.store,
     ...
 };
 let keyvalue-ops = new local:test-keyvalue-ops {
+    "wasmcloud:keyvalue/types@0.2.0": keyvalue-client["wasmcloud:keyvalue/types@0.2.0"],
     "wasmcloud:keyvalue/store@0.2.0": keyvalue-client["wasmcloud:keyvalue/store@0.2.0"],
     ...
 };

@@ -11,7 +11,7 @@ use wasi::logging::logging::{log, Level};
 struct StubService {}
 
 impl Lifecycle for StubService {
-    fn provision(
+    async fn provision(
         instance_id: ServiceInstanceId,
         type_: String,
         tier: Option<Tier>,
@@ -22,7 +22,7 @@ impl Lifecycle for StubService {
         Ok(())
     }
 
-    fn update(
+    async fn update(
         instance_id: ServiceInstanceId,
         tier: Option<Tier>,
         requests: Option<Vec<Request>>,
@@ -35,7 +35,7 @@ impl Lifecycle for StubService {
         Ok(())
     }
 
-    fn destroy(instance_id: ServiceInstanceId, retain: Option<bool>) -> Result<(), Error> {
+    async fn destroy(instance_id: ServiceInstanceId, retain: Option<bool>) -> Result<(), Error> {
         log(
             Level::Info,
             "lifecycle",
@@ -45,12 +45,12 @@ impl Lifecycle for StubService {
         Ok(())
     }
 
-    fn bind(
+    async fn bind(
         binding_id: ServiceBindingId,
         instance_id: ServiceInstanceId,
         scopes: Option<Vec<Scope>>,
     ) -> Result<(), Error> {
-        credential_admin::publish(&binding_id, &vec![])?;
+        credential_admin::publish(binding_id.clone(), vec![]).await?;
         log(
             Level::Info,
             "lifecycle",
@@ -59,8 +59,11 @@ impl Lifecycle for StubService {
         Ok(())
     }
 
-    fn unbind(binding_id: ServiceBindingId, instance_id: ServiceInstanceId) -> Result<(), Error> {
-        credential_admin::destroy(&binding_id)?;
+    async fn unbind(
+        binding_id: ServiceBindingId,
+        instance_id: ServiceInstanceId,
+    ) -> Result<(), Error> {
+        credential_admin::destroy(binding_id.clone()).await?;
         log(
             Level::Info,
             "lifecycle",
@@ -69,7 +72,7 @@ impl Lifecycle for StubService {
         Ok(())
     }
 
-    fn list_bindings(instance_id: ServiceInstanceId) -> Result<Vec<ServiceBindingId>, Error> {
+    async fn list_bindings(instance_id: ServiceInstanceId) -> Result<Vec<ServiceBindingId>, Error> {
         log(
             Level::Info,
             "lifecycle",

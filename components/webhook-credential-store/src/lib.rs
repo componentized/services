@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use exports::componentized::services::credential_store::{Credential, Error, Guest, ServiceId};
 use wasi::config::store as config;
 use wasi::http::{
-    outgoing_handler::handle,
-    types::{FieldName, Headers, IncomingResponse, Method, OutgoingRequest, Scheme},
+    client::send,
+    types::{FieldName, Headers, Method, Request, Response, Scheme},
 };
 
 const HOST_KEY: &str = "host";
@@ -34,64 +34,55 @@ impl WebhookCredentialStore {
         }
     }
 
-    fn make_request(path: &str, headers: Vec<(&str, &str)>) -> Result<IncomingResponse, Error> {
+    async fn make_request(path: &str, headers: Vec<(&str, &str)>) -> Result<Response, Error> {
         let request_headers = Headers::new();
         for (name, value) in headers {
-            _ = request_headers
-                .set(
-                    &FieldName::from(name),
-                    vec![value.as_bytes().to_vec()].as_ref(),
-                )
-                .map_err(|e| Error::from(e.to_string()))?;
+            request_headers
+                .set(&FieldName::from(name), &[value.as_bytes().to_vec()])
+                .map_err(|e| Error::from(format!("invalid header '{name}': {e:?}")))?;
         }
-        let request = OutgoingRequest::new(request_headers);
-        _ = request
+        // no body, and no trailers once the writer is dropped
+        let (_, trailers) = wit_future::new(|| Ok(None));
+        let (request, _) = Request::new(request_headers, None, trailers, None);
+        request
             .set_method(&Method::Post)
             .map_err(|_| Error::from("unable to set method"))?;
-        // TODO get scheme and authority from config
-        _ = request
+        request
             .set_scheme(Some(&Self::scheme()?))
             .map_err(|_| Error::from("unable to set scheme"))?;
-        _ = request
+        request
             .set_authority(Some(&Self::host()?))
             .map_err(|_| Error::from("unable to set authority"))?;
-        _ = request
-            .set_path_with_query(Some(&path))
+        request
+            .set_path_with_query(Some(path))
             .map_err(|_| Error::from("unable to set path"))?;
 
-        let response = handle(request, None).map_err(|e| Error::from(e.to_string()))?;
-        response.subscribe().block();
-
-        let response = response
-            .get()
-            .ok_or_else(|| Error::from("unable to get response"))?
-            .map_err(|_| Error::from("http error"))?
-            .map_err(|e| Error::from(e.to_string()))?;
-        Ok(response)
+        send(request)
+            .await
+            .map_err(|e| Error::from(format!("http error: {e:?}")))
     }
 }
 
 impl Guest for WebhookCredentialStore {
-    fn fetch(id: ServiceId) -> Result<Vec<Credential>, Error> {
+    async fn fetch(id: ServiceId) -> Result<Vec<Credential>, Error> {
         let response =
-            Self::make_request("/services/credentials/fetch", vec![("service-id", &id)])?;
-        match response.status() {
+            Self::make_request("/services/credentials/fetch", vec![("service-id", &id)]).await?;
+        match response.get_status_code() {
             200 => {
-                let body = response.consume().unwrap();
-                let body_stream = body.stream().unwrap();
-                body_stream.subscribe().block();
-                let rawcreds: HashMap<String, String> = serde_json::from_slice(
-                    body_stream.blocking_read(1024 * 1024).unwrap().as_ref(),
-                )
-                .map_err(|e| e.to_string())?;
+                // the body is consumed whole, nothing is left to report
+                let (_, consumed) = wit_future::new(|| Ok(()));
+                let (body, trailers) = Response::consume_body(response, consumed);
+                let body = body.collect().await;
+                trailers
+                    .await
+                    .map_err(|e| Error::from(format!("http error: {e:?}")))?;
+                let rawcreds: HashMap<String, String> =
+                    serde_json::from_slice(&body).map_err(|e| e.to_string())?;
 
-                let mut creds = vec![];
-                for (key, value) in rawcreds {
-                    creds.push(Credential { key, value });
-                }
-
-                drop(body_stream);
-                drop(body);
+                let creds = rawcreds
+                    .into_iter()
+                    .map(|(key, value)| Credential { key, value })
+                    .collect();
 
                 Ok(creds)
             }

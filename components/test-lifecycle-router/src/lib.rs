@@ -13,16 +13,16 @@ impl Lifecycle {
             _ => Err(Error::from(format!("Unknown type '{type_}'"))),
         }
     }
-    fn get_type_for_instance_id(instance_id: ServiceInstanceId) -> Result<String, Error> {
-        let creds = componentized::services::credential_store::fetch(&instance_id)?;
+    async fn get_type_for_instance_id(instance_id: ServiceInstanceId) -> Result<String, Error> {
+        let creds = componentized::services::credential_store::fetch(instance_id).await?;
         let type_cred = creds.iter().find(|c| c.key == "type");
         match type_cred {
             Some(type_cred) => Ok(type_cred.value.clone()),
             None => Err(Error::from("Instance credentials must contain type")),
         }
     }
-    fn get_type_for_binding_id(binding_id: ServiceBindingId) -> Result<String, Error> {
-        let creds = componentized::services::credential_store::fetch(&binding_id)?;
+    async fn get_type_for_binding_id(binding_id: ServiceBindingId) -> Result<String, Error> {
+        let creds = componentized::services::credential_store::fetch(binding_id).await?;
         let type_cred = creds.iter().find(|c| c.key == "type");
         match type_cred {
             Some(type_cred) => Ok(type_cred.value.clone()),
@@ -37,84 +37,92 @@ enum LifeycleType {
 }
 
 impl Guest for Lifecycle {
-    fn provision(
+    async fn provision(
         instance_id: ServiceInstanceId,
         type_: String,
         tier: Option<Tier>,
         requests: Option<Vec<Request>>,
     ) -> Result<(), Error> {
-        let tier = tier.as_deref();
-        let requests = requests.as_deref();
         match Lifecycle::get_lifecycle(type_.clone())? {
             LifeycleType::Filesystem => {
-                filesystem_lifecycle::provision(&instance_id, &type_, tier, requests)
+                filesystem_lifecycle::provision(instance_id.clone(), type_.clone(), tier, requests)
+                    .await
             }
             LifeycleType::Keyvalue => {
-                keyvalue_lifecycle::provision(&instance_id, &type_, tier, requests)
+                keyvalue_lifecycle::provision(instance_id.clone(), type_.clone(), tier, requests)
+                    .await
             }
         }?;
         componentized::services::credential_admin::publish(
-            &instance_id,
+            instance_id,
             vec![Credential {
                 key: "type".to_string(),
                 value: type_,
-            }]
-            .as_ref(),
-        )?;
+            }],
+        )
+        .await?;
         Ok(())
     }
 
-    fn update(
+    async fn update(
         instance_id: ServiceInstanceId,
         tier: Option<Tier>,
         requests: Option<Vec<Request>>,
     ) -> Result<(), Error> {
-        let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone())?;
-        let tier = tier.as_deref();
-        let requests = requests.as_deref();
+        let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone()).await?;
         match Lifecycle::get_lifecycle(type_.clone())? {
-            LifeycleType::Filesystem => filesystem_lifecycle::update(&instance_id, tier, requests),
-            LifeycleType::Keyvalue => keyvalue_lifecycle::update(&instance_id, tier, requests),
+            LifeycleType::Filesystem => {
+                filesystem_lifecycle::update(instance_id, tier, requests).await
+            }
+            LifeycleType::Keyvalue => keyvalue_lifecycle::update(instance_id, tier, requests).await,
         }
     }
 
-    fn destroy(instance_id: ServiceInstanceId, retain: Option<bool>) -> Result<(), Error> {
-        let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone())?;
-        componentized::services::credential_admin::destroy(&instance_id)?;
+    async fn destroy(instance_id: ServiceInstanceId, retain: Option<bool>) -> Result<(), Error> {
+        let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone()).await?;
+        componentized::services::credential_admin::destroy(instance_id.clone()).await?;
         match Lifecycle::get_lifecycle(type_.clone())? {
-            LifeycleType::Filesystem => filesystem_lifecycle::destroy(&instance_id, retain),
-            LifeycleType::Keyvalue => keyvalue_lifecycle::destroy(&instance_id, retain),
+            LifeycleType::Filesystem => {
+                filesystem_lifecycle::destroy(instance_id.clone(), retain).await
+            }
+            LifeycleType::Keyvalue => {
+                keyvalue_lifecycle::destroy(instance_id.clone(), retain).await
+            }
         }
     }
 
-    fn bind(
+    async fn bind(
         binding_id: ServiceBindingId,
         instance_id: ServiceInstanceId,
         scopes: Option<Vec<Scope>>,
     ) -> Result<(), Error> {
-        let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone())?;
-        let scopes = scopes.as_deref();
+        let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone()).await?;
         match Lifecycle::get_lifecycle(type_.clone())? {
             LifeycleType::Filesystem => {
-                filesystem_lifecycle::bind(&binding_id, &instance_id, scopes)
+                filesystem_lifecycle::bind(binding_id, instance_id, scopes).await
             }
-            LifeycleType::Keyvalue => keyvalue_lifecycle::bind(&binding_id, &instance_id, scopes),
+            LifeycleType::Keyvalue => {
+                keyvalue_lifecycle::bind(binding_id, instance_id, scopes).await
+            }
         }
     }
 
-    fn unbind(binding_id: ServiceBindingId, instance_id: ServiceInstanceId) -> Result<(), Error> {
-        let type_ = Lifecycle::get_type_for_binding_id(binding_id.clone())?;
+    async fn unbind(
+        binding_id: ServiceBindingId,
+        instance_id: ServiceInstanceId,
+    ) -> Result<(), Error> {
+        let type_ = Lifecycle::get_type_for_binding_id(binding_id.clone()).await?;
         match Lifecycle::get_lifecycle(type_.clone())? {
-            LifeycleType::Filesystem => filesystem_lifecycle::unbind(&binding_id, &instance_id),
-            LifeycleType::Keyvalue => keyvalue_lifecycle::unbind(&binding_id, &instance_id),
+            LifeycleType::Filesystem => filesystem_lifecycle::unbind(binding_id, instance_id).await,
+            LifeycleType::Keyvalue => keyvalue_lifecycle::unbind(binding_id, instance_id).await,
         }
     }
 
-    fn list_bindings(instance_id: ServiceInstanceId) -> Result<Vec<ServiceBindingId>, Error> {
-        let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone())?;
+    async fn list_bindings(instance_id: ServiceInstanceId) -> Result<Vec<ServiceBindingId>, Error> {
+        let type_ = Lifecycle::get_type_for_instance_id(instance_id.clone()).await?;
         match Lifecycle::get_lifecycle(type_.clone())? {
-            LifeycleType::Filesystem => filesystem_lifecycle::list_bindings(&instance_id),
-            LifeycleType::Keyvalue => keyvalue_lifecycle::list_bindings(&instance_id),
+            LifeycleType::Filesystem => filesystem_lifecycle::list_bindings(instance_id).await,
+            LifeycleType::Keyvalue => keyvalue_lifecycle::list_bindings(instance_id).await,
         }
     }
 }

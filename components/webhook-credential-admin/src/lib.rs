@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use exports::componentized::services::credential_admin::{Credential, Error, Guest, ServiceId};
 use wasi::config::store as config;
 use wasi::http::{
-    outgoing_handler::handle,
-    types::{FieldName, Headers, IncomingResponse, Method, OutgoingRequest, Scheme},
+    client::send,
+    types::{FieldName, Headers, Method, Request, Response, Scheme},
 };
 
 const HOST_KEY: &str = "host";
@@ -32,45 +32,37 @@ impl WebhookCredentialAdmin {
         }
     }
 
-    fn make_request(path: &str, headers: Vec<(&str, &str)>) -> Result<IncomingResponse, Error> {
+    async fn make_request(path: &str, headers: Vec<(&str, &str)>) -> Result<Response, Error> {
         let request_headers = Headers::new();
         for (name, value) in headers {
-            _ = request_headers
-                .set(
-                    &FieldName::from(name),
-                    vec![value.as_bytes().to_vec()].as_ref(),
-                )
-                .map_err(|e| Error::from(e.to_string()))?;
+            request_headers
+                .set(&FieldName::from(name), &[value.as_bytes().to_vec()])
+                .map_err(|e| Error::from(format!("invalid header '{name}': {e:?}")))?;
         }
-        let request = OutgoingRequest::new(request_headers);
-        _ = request
+        // no body, and no trailers once the writer is dropped
+        let (_, trailers) = wit_future::new(|| Ok(None));
+        let (request, _) = Request::new(request_headers, None, trailers, None);
+        request
             .set_method(&Method::Post)
             .map_err(|_| Error::from("unable to set method"))?;
-        // TODO get scheme and authority from config
-        _ = request
+        request
             .set_scheme(Some(&Self::scheme()?))
             .map_err(|_| Error::from("unable to set scheme"))?;
-        _ = request
+        request
             .set_authority(Some(&Self::host()?))
             .map_err(|_| Error::from("unable to set authority"))?;
-        _ = request
-            .set_path_with_query(Some(&path))
+        request
+            .set_path_with_query(Some(path))
             .map_err(|_| Error::from("unable to set path"))?;
 
-        let response = handle(request, None).map_err(|e| Error::from(e.to_string()))?;
-        response.subscribe().block();
-
-        let response = response
-            .get()
-            .ok_or_else(|| Error::from("unable to get response"))?
-            .map_err(|_| Error::from("http error"))?
-            .map_err(|e| Error::from(e.to_string()))?;
-        Ok(response)
+        send(request)
+            .await
+            .map_err(|e| Error::from(format!("http error: {e:?}")))
     }
 }
 
 impl Guest for WebhookCredentialAdmin {
-    fn publish(id: ServiceId, credentials: Vec<Credential>) -> Result<(), Error> {
+    async fn publish(id: ServiceId, credentials: Vec<Credential>) -> Result<(), Error> {
         let mut creds = HashMap::new();
         for cred in credentials {
             creds.insert(cred.key, cred.value);
@@ -83,17 +75,18 @@ impl Guest for WebhookCredentialAdmin {
                 ("service-id", &id),
                 ("service-credentials", &service_credentials),
             ],
-        )?;
-        match response.status() {
+        )
+        .await?;
+        match response.get_status_code() {
             204 => Ok(()),
             code => Err(Error::from(format!("unexpected http status {code}"))),
         }
     }
 
-    fn destroy(id: ServiceId) -> Result<(), Error> {
+    async fn destroy(id: ServiceId) -> Result<(), Error> {
         let response =
-            Self::make_request("/services/credentials/destroy", vec![("service-id", &id)])?;
-        match response.status() {
+            Self::make_request("/services/credentials/destroy", vec![("service-id", &id)]).await?;
+        match response.get_status_code() {
             204 => Ok(()),
             code => Err(Error::from(format!("unexpected http status {code}"))),
         }

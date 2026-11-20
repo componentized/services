@@ -4,9 +4,10 @@ use componentized::services::types::{Credential, Request, Scope, Tier};
 use exports::componentized::services::lifecycle::{
     Error, Guest as Lifecycle, ServiceBindingId, ServiceInstanceId,
 };
-use std::fs;
 use std::path::PathBuf;
-use wasi::clocks::wall_clock::now;
+use wasi::clocks::system_clock::now;
+
+mod fs;
 
 const PATH_KEY: &str = "path";
 const PATH_DEFAULT: &str = "services";
@@ -43,7 +44,7 @@ impl FilesystemService {
 }
 
 impl Lifecycle for FilesystemService {
-    fn provision(
+    async fn provision(
         instance_id: ServiceInstanceId,
         type_: String,
         tier: Option<Tier>,
@@ -60,15 +61,19 @@ impl Lifecycle for FilesystemService {
             Err(Error::from("requests are not supported"))?;
         }
 
-        fs::create_dir_all(FilesystemService::get_data_path(instance_id.clone())?)
-            .map_err(|e| Error::from(e.to_string()))?;
-        fs::create_dir_all(FilesystemService::get_bindings_path(instance_id.clone())?)
-            .map_err(|e| Error::from(e.to_string()))?;
+        fs::create_dir_all(
+            &FilesystemService::get_data_path(instance_id.clone())?.to_string_lossy(),
+        )
+        .await?;
+        fs::create_dir_all(
+            &FilesystemService::get_bindings_path(instance_id.clone())?.to_string_lossy(),
+        )
+        .await?;
 
         Ok(())
     }
 
-    fn update(
+    async fn update(
         _instance_id: ServiceInstanceId,
         tier: Option<Tier>,
         requests: Option<Vec<Request>>,
@@ -84,21 +89,25 @@ impl Lifecycle for FilesystemService {
         Ok(())
     }
 
-    fn destroy(instance_id: ServiceInstanceId, retain: Option<bool>) -> Result<(), Error> {
-        fs::remove_dir(FilesystemService::get_bindings_path(instance_id.clone())?)
-            .map_err(|e| Error::from(e.to_string()))?;
+    async fn destroy(instance_id: ServiceInstanceId, retain: Option<bool>) -> Result<(), Error> {
+        fs::remove_dir(
+            &FilesystemService::get_bindings_path(instance_id.clone())?.to_string_lossy(),
+        )
+        .await?;
 
         if retain.unwrap_or(false) {
             return Ok(());
         }
 
-        fs::remove_dir_all(FilesystemService::get_instance_path(instance_id.clone())?)
-            .map_err(|e| Error::from(e.to_string()))?;
+        fs::remove_dir_all(
+            &FilesystemService::get_instance_path(instance_id.clone())?.to_string_lossy(),
+        )
+        .await?;
 
         Ok(())
     }
 
-    fn bind(
+    async fn bind(
         binding_id: ServiceBindingId,
         instance_id: ServiceInstanceId,
         scopes: Option<Vec<Scope>>,
@@ -139,38 +148,30 @@ impl Lifecycle for FilesystemService {
             },
         ];
 
-        // TODO soft_link is deprecated, but the replacements are not supported for wasm32
-        #[allow(deprecated)]
-        fs::soft_link(
+        fs::symlink(
             "../data",
-            FilesystemService::get_binding_path(instance_id.clone(), binding_id.clone())?,
+            &FilesystemService::get_binding_path(instance_id.clone(), binding_id.clone())?
+                .to_string_lossy(),
         )
-        .map_err(|e| Error::from(e.to_string()))?;
-        publish(&binding_id, credentials.as_slice())?;
+        .await?;
+        publish(binding_id, credentials).await?;
 
         Ok(())
     }
 
-    fn unbind(binding_id: ServiceBindingId, instance_id: ServiceInstanceId) -> Result<(), Error> {
-        destroy(&binding_id)?;
-        fs::remove_file(FilesystemService::get_binding_path(
-            instance_id,
-            binding_id,
-        )?)
-        .map_err(|e| Error::from(e.to_string()))
+    async fn unbind(
+        binding_id: ServiceBindingId,
+        instance_id: ServiceInstanceId,
+    ) -> Result<(), Error> {
+        destroy(binding_id.clone()).await?;
+        fs::remove_file(
+            &FilesystemService::get_binding_path(instance_id, binding_id)?.to_string_lossy(),
+        )
+        .await
     }
 
-    fn list_bindings(instance_id: ServiceInstanceId) -> Result<Vec<ServiceBindingId>, Error> {
-        let dir = fs::read_dir(FilesystemService::get_bindings_path(instance_id.clone())?)
-            .map_err(|e| Error::from(e.to_string()))?;
-        let mut binding_ids: Vec<ServiceBindingId> = vec![];
-        for file in dir {
-            let file = file.map_err(|e| Error::from(e.to_string()))?;
-            let binding_id: ServiceBindingId = file.file_name().to_str().unwrap().into();
-            binding_ids.push(binding_id);
-        }
-
-        Ok(binding_ids)
+    async fn list_bindings(instance_id: ServiceInstanceId) -> Result<Vec<ServiceBindingId>, Error> {
+        fs::read_dir(&FilesystemService::get_bindings_path(instance_id)?.to_string_lossy()).await
     }
 }
 

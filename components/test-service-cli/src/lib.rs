@@ -6,8 +6,10 @@ use componentized::services::types::{
     Credential, Error, Request, Scope, ServiceBindingId, ServiceId, ServiceInstanceId, Tier,
 };
 use componentized::services_test_components::ops;
+use exports::wasi::cli::run::Guest;
 use regex_lite::Regex;
-use std::io::{self, Write};
+use wasi::cli::environment::get_arguments;
+use wasi::cli::{stderr, stdout};
 use wasi::random::random::get_random_bytes;
 
 /// componentized services CLI
@@ -136,14 +138,6 @@ enum CredentialCommands {
     /// Fetch credentials for a service instance or binding
     #[command(arg_required_else_help = true)]
     Fetch {
-        /// Identifier for the service instance or binding
-        #[arg(required = true)]
-        id: ServiceId,
-    },
-
-    /// Export credentials for a service instance or binding as a wasi:config/store component
-    #[command(arg_required_else_help = true)]
-    Export {
         /// Identifier for the service instance or binding
         #[arg(required = true)]
         id: ServiceId,
@@ -291,22 +285,81 @@ impl UuidIds {
     }
 }
 
-fn main() -> Result<(), ()> {
-    match Cli::parse().command {
+struct ServiceCli;
+
+impl Guest for ServiceCli {
+    async fn run() -> Result<(), ()> {
+        let cli = match Cli::try_parse_from(get_arguments()) {
+            Ok(cli) => cli,
+            // help and version are errors that exit successfully, printed to stdout
+            Err(e) => {
+                let message = e.render().to_string().into_bytes();
+                if e.use_stderr() {
+                    write_stderr(message).await;
+                } else {
+                    write_stdout(message).await;
+                }
+                return if e.exit_code() == 0 { Ok(()) } else { Err(()) };
+            }
+        };
+        match command(cli.command).await {
+            Ok(()) => Ok(()),
+            Err(message) => {
+                eprintln(message).await;
+                Err(())
+            }
+        }
+    }
+}
+
+/// Write the data to the stdout stream.
+async fn write_stdout(data: Vec<u8>) {
+    let (mut writer, reader) = wit_stream::new();
+    let result = stdout::write_via_stream(reader);
+    writer.write_all(data).await;
+    drop(writer);
+    // nothing reports an error writing to stdout
+    let _ = result.await;
+}
+
+/// Write the data to the stderr stream.
+async fn write_stderr(data: Vec<u8>) {
+    let (mut writer, reader) = wit_stream::new();
+    let result = stderr::write_via_stream(reader);
+    writer.write_all(data).await;
+    drop(writer);
+    // nothing reports an error writing to stderr
+    let _ = result.await;
+}
+
+/// Write the line to stdout.
+async fn println(line: impl Into<String>) {
+    write_stdout((line.into() + "\n").into_bytes()).await
+}
+
+/// Write the line to stderr.
+async fn eprintln(line: impl Into<String>) {
+    write_stderr((line.into() + "\n").into_bytes()).await
+}
+
+/// Run the command, an error is the message to print to stderr.
+async fn command(command: Commands) -> Result<(), String> {
+    match command {
         Commands::Provision {
             type_,
             tier,
             requests,
         } => {
-            eprintln!("Provisioning service: {type_}");
+            eprintln(format!("Provisioning service: {type_}")).await;
 
             let instance_id = UuidIds::generate_instance_id()
-                .map_err(|e| eprintln!("Error generating instance id: {}", e))?;
+                .map_err(|e| format!("Error generating instance id: {e}"))?;
 
-            lifecycle::provision(&instance_id, &type_, tier.as_deref(), requests.as_deref())
-                .map_err(|e| eprintln!("Error provisioning: {}", e))?;
+            lifecycle::provision(instance_id.clone(), type_, tier, requests)
+                .await
+                .map_err(|e| format!("Error provisioning: {e}"))?;
 
-            println!("{}", instance_id);
+            println(instance_id).await;
 
             Ok(())
         }
@@ -315,36 +368,36 @@ fn main() -> Result<(), ()> {
             tier,
             requests,
         } => {
-            eprintln!("Updating service {}", instance_id);
+            eprintln(format!("Updating service {instance_id}")).await;
 
-            lifecycle::update(&instance_id, tier.as_deref(), requests.as_deref())
-                .map_err(|e| eprintln!("Error updating: {}", e))
+            lifecycle::update(instance_id, tier, requests)
+                .await
+                .map_err(|e| format!("Error updating: {e}"))
         }
         Commands::Destroy {
             instance_id,
             retain,
         } => {
-            eprintln!("Destroying service {}", instance_id);
+            eprintln(format!("Destroying service {instance_id}")).await;
 
-            lifecycle::destroy(&instance_id, retain)
-                .map_err(|e| eprintln!("Error destroying: {}", e))
+            lifecycle::destroy(instance_id, retain)
+                .await
+                .map_err(|e| format!("Error destroying: {e}"))
         }
         Commands::Bind {
             instance_id,
             scopes,
         } => {
-            eprintln!("Binding to {}", instance_id);
+            eprintln(format!("Binding to {instance_id}")).await;
 
-            let binding_id = UuidIds::generate_binding_id(&instance_id).map_err(|e| {
-                eprintln!("Error generating binding id: {}", e);
-            })?;
-            let scopes = scopes.as_deref();
+            let binding_id = UuidIds::generate_binding_id(&instance_id)
+                .map_err(|e| format!("Error generating binding id: {e}"))?;
 
-            lifecycle::bind(&binding_id, &instance_id, scopes).map_err(|e| {
-                eprintln!("Error binding to {}: {}", instance_id, e);
-            })?;
+            lifecycle::bind(binding_id.clone(), instance_id.clone(), scopes)
+                .await
+                .map_err(|e| format!("Error binding to {instance_id}: {e}"))?;
 
-            println!("{}", binding_id);
+            println(binding_id).await;
 
             Ok(())
         }
@@ -352,132 +405,103 @@ fn main() -> Result<(), ()> {
             binding_id,
             instance_id,
         } => {
-            eprintln!("Unbinding {}", binding_id);
+            eprintln(format!("Unbinding {binding_id}")).await;
 
-            lifecycle::unbind(&binding_id, &instance_id).map_err(|e| {
-                eprintln!("Error unbinding: {}", e);
-            })
+            lifecycle::unbind(binding_id, instance_id)
+                .await
+                .map_err(|e| format!("Error unbinding: {e}"))
         }
         Commands::ListBindings { instance_id } => {
-            eprintln!("List bindings for {}", instance_id);
+            eprintln(format!("List bindings for {instance_id}")).await;
 
-            let bindings = lifecycle::list_bindings(&instance_id).map_err(|e| {
-                eprintln!("Error listing: {}", e);
-            })?;
+            let bindings = lifecycle::list_bindings(instance_id)
+                .await
+                .map_err(|e| format!("Error listing: {e}"))?;
             for binding in bindings {
-                println!("{binding}");
+                println(binding).await;
             }
 
             Ok(())
         }
         Commands::Credentials(store) => match store.command {
             CredentialCommands::Publish { id, credentials } => {
-                eprintln!("Publish creds for {}", id);
+                eprintln(format!("Publish creds for {id}")).await;
 
-                publish(&id, &credentials).map_err(|e: Error| {
-                    eprintln!("Error publishing {}: {}", id, e);
-                })
+                publish(id.clone(), credentials)
+                    .await
+                    .map_err(|e| format!("Error publishing {id}: {e}"))
             }
             CredentialCommands::Destroy { id } => {
-                eprintln!("Destroy creds for {}", id);
+                eprintln(format!("Destroy creds for {id}")).await;
 
-                destroy(&id).map_err(|e: Error| {
-                    eprintln!("Error destroying {}: {}", id, e);
-                })
+                destroy(id.clone())
+                    .await
+                    .map_err(|e| format!("Error destroying {id}: {e}"))
             }
             CredentialCommands::Fetch { id } => {
-                eprintln!("Fetch creds for {}", id);
+                eprintln(format!("Fetch creds for {id}")).await;
 
-                let creds = fetch(&id).map_err(|e: Error| {
-                    eprintln!("Error fetching {}: {}", id, e);
-                })?;
-                println!("{:#?}", creds);
-
-                Ok(())
-            }
-            CredentialCommands::Export { id } => {
-                eprintln!("Export creds for {}", id);
-
-                let creds: Vec<(String, String)> = fetch(&id)
-                    .map_err(|e: Error| {
-                        eprintln!("Error fetching {}: {}", id, e);
-                    })?
-                    .iter()
-                    .map(|cred| (cred.key.clone(), cred.value.clone()))
-                    .collect();
-                let config =
-                    componentized::config::factory::build_component(&creds).map_err(|e| {
-                        eprintln!("Error creating config {}: {}", id, e);
-                    })?;
-
-                let mut output = Box::new(io::stdout()) as Box<dyn Write>;
-                output.write_all(&config).map_err(|e| {
-                    eprintln!("Error writing config {}: {}", id, e);
-                })?;
+                let creds = fetch(id.clone())
+                    .await
+                    .map_err(|e| format!("Error fetching {id}: {e}"))?;
+                println(format!("{creds:#?}")).await;
 
                 Ok(())
             }
         },
         Commands::Ops(ops) => match ops.command {
             OpsCommands::List { path } => {
-                eprintln!("List in {}", path);
+                eprintln(format!("List in {path}")).await;
 
                 let mut path = path;
                 if path == "/" || path == "." {
                     path = "".to_string();
                 }
 
-                let items = ops::list(&path).map_err(|e: Error| {
-                    eprintln!("Error listing {}: {}", path, e);
-                })?;
+                let items = ops::list(path.clone())
+                    .await
+                    .map_err(|e| format!("Error listing {path}: {e}"))?;
                 for item in items {
-                    println!("  {}", item);
+                    println(format!("  {item}")).await;
                 }
 
                 Ok(())
             }
             OpsCommands::Read { path } => {
-                eprintln!("Reading {}:", path);
+                eprintln(format!("Reading {path}:")).await;
 
-                let data = ops::read(&path).map_err(|e: Error| {
-                    eprintln!("Error reading {}: {}", path, e);
-                })?;
-                println!("{}", String::from_utf8(data).unwrap());
+                let data = ops::read(path.clone())
+                    .await
+                    .map_err(|e| format!("Error reading {path}: {e}"))?;
+                println(String::from_utf8_lossy(&data)).await;
 
                 Ok(())
             }
             OpsCommands::Write { path, value } => {
-                let data: Vec<u8> = value.as_bytes().to_vec();
+                let data: Vec<u8> = value.into_bytes();
                 // TODO get data from stdin
-                // io::stdin().read_to_end(&mut data).map_err(|e| {
-                //     eprintln!("Error reading stdin: {}", e);
-                // })?;
 
-                ops::write(&path, data.as_slice()).map_err(|e| {
-                    eprintln!("Error writing {}: {}", path, e);
-                })?;
+                ops::write(path.clone(), data)
+                    .await
+                    .map_err(|e| format!("Error writing {path}: {e}"))?;
 
-                eprintln!("Wrote {path}");
+                eprintln(format!("Wrote {path}")).await;
 
                 Ok(())
             }
             OpsCommands::Move { from_path, to_path } => {
-                eprintln!("Move {} to {}", from_path, to_path);
+                eprintln(format!("Move {from_path} to {to_path}")).await;
 
-                ops::move_(&from_path, &to_path).map_err(|e: Error| {
-                    eprintln!("Error moving: {}", e);
-                })?;
-
-                Ok(())
+                ops::move_(from_path, to_path)
+                    .await
+                    .map_err(|e| format!("Error moving: {e}"))
             }
             OpsCommands::Delete { path } => {
-                eprintln!("Deleting {}", path);
+                eprintln(format!("Deleting {path}")).await;
 
-                ops::delete(&path).map_err(|e: Error| {
-                    eprintln!("Error deleting {}: {}", path, e);
-                })?;
-
-                Ok(())
+                ops::delete(path.clone())
+                    .await
+                    .map_err(|e| format!("Error deleting {path}: {e}"))
             }
         },
     }
@@ -488,3 +512,5 @@ wit_bindgen::generate!({
     world: "cli",
     generate_all
 });
+
+export!(ServiceCli);

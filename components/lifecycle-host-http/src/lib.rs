@@ -1,25 +1,19 @@
 use componentized::services::lifecycle;
 use componentized::services::types::{Request, ServiceBindingId, ServiceInstanceId};
-use exports::wasi::http::incoming_handler::Guest;
-use wasi::http::types::{
-    ErrorCode, Fields, IncomingRequest, OutgoingBody, OutgoingResponse, ResponseOutparam,
-};
+use exports::wasi::http::handler::Guest;
+use wasi::http::types::{self as http, ErrorCode, Fields, Response};
 use wasi::logging::logging::{log, Level};
 
 struct LifecycleHost;
 
 impl Guest for LifecycleHost {
-    fn handle(request: IncomingRequest, response_out: ResponseOutparam) {
-        let headers = Fields::new();
-        let response = OutgoingResponse::new(headers);
-        let body = response.body().unwrap();
-
-        let path_with_query = request.path_with_query().unwrap();
+    async fn handle(request: http::Request) -> Result<Response, ErrorCode> {
+        let path_with_query = request.get_path_with_query().unwrap_or_default();
         let parts: Vec<&str> = path_with_query.splitn(2, "?").collect();
         let path = *parts.get(0).unwrap();
         let query = querystring::querify(*parts.get(1).unwrap_or(&""));
 
-        match path {
+        let body = match path {
             "/provision" => {
                 let instance_id: ServiceInstanceId = ServiceInstanceId::from(
                     get_param(&query, "instance-id").unwrap_or("".to_string()),
@@ -42,21 +36,9 @@ impl Guest for LifecycleHost {
                             .collect()
                     });
                 log(Level::Info, "host", &format!("Provision {type_}"));
-                match lifecycle::provision(
-                    &instance_id,
-                    &type_,
-                    tier.as_deref(),
-                    requests.as_deref(),
-                ) {
-                    Ok(_) => {
-                        ResponseOutparam::set(response_out, Ok(response));
-                        let out = body.write().expect("outgoing stream");
-                        out.blocking_write_and_flush(format!("{}\n", instance_id).as_bytes())
-                            .expect("writing response");
-                    }
-                    Err(e) => {
-                        ResponseOutparam::set(response_out, Err(ErrorCode::InternalError(Some(e))));
-                    }
+                match lifecycle::provision(instance_id.clone(), type_, tier, requests).await {
+                    Ok(_) => format!("{}\n", instance_id),
+                    Err(e) => return Err(ErrorCode::InternalError(Some(e))),
                 }
             }
             "/update" => {
@@ -81,13 +63,9 @@ impl Guest for LifecycleHost {
                     });
 
                 log(Level::Info, "host", &format!("Update {instance_id}"));
-                match lifecycle::update(&instance_id, tier.as_deref(), requests.as_deref()) {
-                    Ok(_) => {
-                        ResponseOutparam::set(response_out, Ok(response));
-                    }
-                    Err(e) => {
-                        ResponseOutparam::set(response_out, Err(ErrorCode::InternalError(Some(e))));
-                    }
+                match lifecycle::update(instance_id, tier, requests).await {
+                    Ok(_) => String::new(),
+                    Err(e) => return Err(ErrorCode::InternalError(Some(e))),
                 }
             }
             "/destroy" => {
@@ -100,13 +78,9 @@ impl Guest for LifecycleHost {
                     "host",
                     &format!("Destroy {instance_id} {retain:?}"),
                 );
-                match lifecycle::destroy(&instance_id, retain) {
-                    Ok(_) => {
-                        ResponseOutparam::set(response_out, Ok(response));
-                    }
-                    Err(e) => {
-                        ResponseOutparam::set(response_out, Err(ErrorCode::InternalError(Some(e))));
-                    }
+                match lifecycle::destroy(instance_id, retain).await {
+                    Ok(_) => String::new(),
+                    Err(e) => return Err(ErrorCode::InternalError(Some(e))),
                 }
             }
             "/bind" => {
@@ -122,16 +96,9 @@ impl Guest for LifecycleHost {
                     "host",
                     &format!("Bind {instance_id}: {scopes:?}"),
                 );
-                match lifecycle::bind(&binding_id, &instance_id, scopes.as_deref()) {
-                    Ok(_) => {
-                        ResponseOutparam::set(response_out, Ok(response));
-                        let out = body.write().expect("outgoing stream");
-                        out.blocking_write_and_flush(format!("{}\n", binding_id).as_bytes())
-                            .expect("writing response");
-                    }
-                    Err(e) => {
-                        ResponseOutparam::set(response_out, Err(ErrorCode::InternalError(Some(e))));
-                    }
+                match lifecycle::bind(binding_id.clone(), instance_id, scopes).await {
+                    Ok(_) => format!("{}\n", binding_id),
+                    Err(e) => return Err(ErrorCode::InternalError(Some(e))),
                 }
             }
             "/list-bindings" => {
@@ -139,18 +106,9 @@ impl Guest for LifecycleHost {
                     get_param(&query, "instance-id").unwrap_or("".to_string()),
                 );
                 log(Level::Info, "host", &format!("List bindings {instance_id}"));
-                match lifecycle::list_bindings(&instance_id) {
-                    Ok(binding_ids) => {
-                        ResponseOutparam::set(response_out, Ok(response));
-                        let out = body.write().expect("outgoing stream");
-                        out.blocking_write_and_flush(
-                            format!("{}\n", binding_ids.join("\n")).as_bytes(),
-                        )
-                        .expect("writing response");
-                    }
-                    Err(e) => {
-                        ResponseOutparam::set(response_out, Err(ErrorCode::InternalError(Some(e))));
-                    }
+                match lifecycle::list_bindings(instance_id).await {
+                    Ok(binding_ids) => format!("{}\n", binding_ids.join("\n")),
+                    Err(e) => return Err(ErrorCode::InternalError(Some(e))),
                 }
             }
             "/unbind" => {
@@ -161,26 +119,35 @@ impl Guest for LifecycleHost {
                     get_param(&query, "instance-id").unwrap_or("".to_string()),
                 );
                 log(Level::Info, "host", &format!("Unbind {binding_id}"));
-                match lifecycle::unbind(&binding_id, &instance_id) {
-                    Ok(_) => {
-                        ResponseOutparam::set(response_out, Ok(response));
-                    }
-                    Err(e) => {
-                        ResponseOutparam::set(response_out, Err(ErrorCode::InternalError(Some(e))));
-                    }
+                match lifecycle::unbind(binding_id, instance_id).await {
+                    Ok(_) => String::new(),
+                    Err(e) => return Err(ErrorCode::InternalError(Some(e))),
                 }
             }
             path => {
                 log(Level::Warn, "http", &format!("unmapped path: {path}"));
-                ResponseOutparam::set(
-                    response_out,
-                    Err(ErrorCode::InternalError(Some("Not Found".to_string()))),
-                );
+                return Err(ErrorCode::InternalError(Some("Not Found".to_string())));
             }
         };
 
-        OutgoingBody::finish(body, None).unwrap();
+        Ok(respond(body))
     }
+}
+
+/// A response with the body, written once the response is returned.
+fn respond(body: String) -> Response {
+    // no trailers once the writer is dropped
+    let (_, trailers) = wit_future::new(|| Ok(None));
+    if body.is_empty() {
+        let (response, _) = Response::new(Fields::new(), None, trailers);
+        return response;
+    }
+    let (mut writer, contents) = wit_stream::new();
+    let (response, _) = Response::new(Fields::new(), Some(contents), trailers);
+    wit_bindgen::spawn_local(async move {
+        writer.write_all(body.into_bytes()).await;
+    });
+    response
 }
 
 fn get_param(query: &querystring::QueryParams, key: &str) -> Option<String> {
