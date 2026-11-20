@@ -1,17 +1,21 @@
 use exports::componentized::services_test_components::ops::{Error, Guest};
-use wasi::keyvalue::store;
+use wasmcloud::keyvalue::store;
 
 struct KeyvalueOps;
 
 impl KeyvalueOps {
-    fn open() -> Result<store::Bucket, Error> {
-        store::open("ops").map_err(map_err)
+    async fn open() -> Result<store::Bucket, Error> {
+        store::open("ops".to_string()).await.map_err(map_err)
     }
 }
 
 impl Guest for KeyvalueOps {
-    fn list(path: String) -> Result<Vec<String>, Error> {
-        let response = Self::open()?.list_keys(None).map_err(map_err)?;
+    async fn list(path: String) -> Result<Vec<String>, Error> {
+        let response = Self::open()
+            .await?
+            .list_keys(None, None)
+            .await
+            .map_err(map_err)?;
 
         let mut keys = vec![];
         for key in response.keys {
@@ -23,24 +27,33 @@ impl Guest for KeyvalueOps {
         Ok(keys)
     }
 
-    fn read(path: String) -> Result<Vec<u8>, Error> {
-        match Self::open()?.get(&path).map_err(map_err)? {
+    async fn read(path: String) -> Result<Vec<u8>, Error> {
+        match Self::open()
+            .await?
+            .get(path.clone())
+            .await
+            .map_err(map_err)?
+        {
             Some(value) => Ok(value),
             None => Err(format!("Path '{path}' not found")),
         }
     }
 
-    fn write(path: String, data: Vec<u8>) -> Result<(), Error> {
-        Self::open()?.set(&path, &data).map_err(map_err)
+    async fn write(path: String, data: Vec<u8>) -> Result<(), Error> {
+        Self::open()
+            .await?
+            .set(path, data, None)
+            .await
+            .map_err(map_err)
     }
 
-    fn move_(from_path: String, to_path: String) -> Result<(), Error> {
-        let bucket = Self::open()?;
+    async fn move_(from_path: String, to_path: String) -> Result<(), Error> {
+        let bucket = Self::open().await?;
 
-        match bucket.get(&from_path).map_err(map_err)? {
+        match bucket.get(from_path.clone()).await.map_err(map_err)? {
             Some(value) => {
-                bucket.set(&to_path, &value).map_err(map_err)?;
-                bucket.delete(&from_path).map_err(map_err)?;
+                bucket.set(to_path, value, None).await.map_err(map_err)?;
+                bucket.delete(from_path).await.map_err(map_err)?;
 
                 Ok(())
             }
@@ -48,16 +61,21 @@ impl Guest for KeyvalueOps {
         }
     }
 
-    fn delete(path: String) -> Result<(), Error> {
-        Self::open()?.delete(&path).map_err(map_err)
+    async fn delete(path: String) -> Result<(), Error> {
+        Self::open().await?.delete(path).await.map_err(map_err)
     }
 }
 
 fn map_err(err: store::Error) -> Error {
     match err {
-        store::Error::NoSuchStore => Error::from("No such store"),
-        store::Error::AccessDenied => Error::from("Access denied"),
-        store::Error::Other(msg) => Error::from(msg),
+        store::Error::NoSuchStore => Error::from("keyvalue: no-such-store"),
+        store::Error::AccessDenied => Error::from("keyvalue: access-denied"),
+        store::Error::InvalidArgument => Error::from("keyvalue: invalid-argument"),
+        store::Error::PreconditionFailed => Error::from("keyvalue: precondiion-failed"),
+        store::Error::Timeout => Error::from("keyvalue: timeout"),
+        store::Error::StoreUnavailable => Error::from("keyvalue: store-unavailable"),
+        store::Error::QuotaExceeded => Error::from("keyvalue: quota-exceeded"),
+        store::Error::Other(message) => Error::from(format!("keyvalue: {message}")),
     }
 }
 

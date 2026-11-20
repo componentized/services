@@ -1,5 +1,2 @@
 [overrides]
 "componentized:services" = { path = "../wit" }
-"componentized:config" = { path = "../wit-overrides/componentized-config" }
-"componentized:valkey" = { path = "../wit-overrides/componentized-valkey" }
-"wasi:keyvalue" = { path = "../wit-overrides/wasi-keyvalue" }

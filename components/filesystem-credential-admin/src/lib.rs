@@ -1,8 +1,8 @@
 use exports::componentized::services::credential_admin::{Credential, Error, Guest, ServiceId};
-use serde_json;
 use std::collections::HashMap;
-use std::fs;
 use std::path::PathBuf;
+
+mod fs;
 
 const PATH_KEY: &str = "path";
 const PATH_DEFAULT: &str = "services";
@@ -20,7 +20,7 @@ impl FilesystemCredentialAdmin {
 }
 
 impl Guest for FilesystemCredentialAdmin {
-    fn publish(id: ServiceId, credentials: Vec<Credential>) -> Result<(), Error> {
+    async fn publish(id: ServiceId, credentials: Vec<Credential>) -> Result<(), Error> {
         let mut creds = HashMap::new();
         for Credential { key, value } in credentials {
             creds.insert(key, value);
@@ -30,13 +30,12 @@ impl Guest for FilesystemCredentialAdmin {
         let path = FilesystemCredentialAdmin::get_path(id)?;
         let mut dir = path.clone();
         dir.pop();
-        fs::create_dir_all(dir).map_err(|e| Error::from(e.to_string()))?;
-        fs::write(path, creds).map_err(|e| Error::from(e.to_string()))
+        fs::create_dir_all(&dir.to_string_lossy()).await?;
+        fs::write(&path.to_string_lossy(), creds.into_bytes()).await
     }
 
-    fn destroy(id: ServiceId) -> Result<(), Error> {
-        fs::remove_file(FilesystemCredentialAdmin::get_path(id)?)
-            .map_err(|e| Error::from(e.to_string()))
+    async fn destroy(id: ServiceId) -> Result<(), Error> {
+        fs::remove_file(&FilesystemCredentialAdmin::get_path(id)?.to_string_lossy()).await
     }
 }
 

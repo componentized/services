@@ -3,6 +3,24 @@
 version = 1
 
 [[packages]]
+name = "componentized:secrets"
+registry = "componentized.dev"
+
+[[packages.versions]]
+requirement = "=0.1.1"
+version = "0.1.1"
+digest = "sha256:2de7f08de0382768ea3aa7dc13eaafb6727f43043d5b50248f2ee47391985f03"
+
+[[packages]]
+name = "componentized:valkey"
+registry = "componentized.dev"
+
+[[packages.versions]]
+requirement = "=0.3.0-dev"
+version = "0.3.0-dev"
+digest = "sha256:2ac63302bfd9f39087df6249ed93270a485f04312b2073b35ab362a693d62626"
+
+[[packages]]
 name = "wasi:cli"
 registry = "wasi.dev"
 
@@ -10,6 +28,11 @@ registry = "wasi.dev"
 requirement = "=0.2.6"
 version = "0.2.6"
 digest = "sha256:fdbe84136b3dd46d94305ef37f24f3cf04a70cc2026dca2592ac2ec0c9de15c7"
+
+[[packages.versions]]
+requirement = "=0.3.0"
+version = "0.3.0"
+digest = "sha256:3a2d58743b67a057f7210b9a73d3b21b34ec7895ffe34d1cb092927307156e40"
 
 [[packages]]
 name = "wasi:clocks"
@@ -19,6 +42,11 @@ registry = "wasi.dev"
 requirement = "=0.2.6"
 version = "0.2.6"
 digest = "sha256:569984cc45d3f5a362a3b2897aabbaa3cc4184a6113bfcbbf03c1bd7fc20338c"
+
+[[packages.versions]]
+requirement = "=0.3.0"
+version = "0.3.0"
+digest = "sha256:59e1f4079e64ada450e19ffc9d08854c904e356ed8cc1fda36ff4fe150264db2"
 
 [[packages]]
 name = "wasi:config"
@@ -38,6 +66,11 @@ requirement = "=0.2.6"
 version = "0.2.6"
 digest = "sha256:7b735005e020ee3d727d995c05849c59bbf084b51a054013c0f0796c571e1ab0"
 
+[[packages.versions]]
+requirement = "=0.3.0"
+version = "0.3.0"
+digest = "sha256:42921410cddcdce2e009fd65c9a763bfb3fb61e2c0a64ff71647cc4405470378"
+
 [[packages]]
 name = "wasi:http"
 registry = "wasi.dev"
@@ -46,6 +79,11 @@ registry = "wasi.dev"
 requirement = "=0.2.6"
 version = "0.2.6"
 digest = "sha256:26a636620af0485dfcfc9a0563a0606564eedcf3fcabda031ab4d4ec0e505ff1"
+
+[[packages.versions]]
+requirement = "=0.3.0"
+version = "0.3.0"
+digest = "sha256:92cd8f3730c00226dc15626a2e7b21834dd187fc221f09818720d228585bbbf7"
 
 [[packages]]
 name = "wasi:logging"
@@ -65,6 +103,11 @@ requirement = "=0.2.6"
 version = "0.2.6"
 digest = "sha256:14ea24097cbe19ae2c79c6ffead72f70c4aed65bb68ef40ed8eca6e08383dc1b"
 
+[[packages.versions]]
+requirement = "=0.3.0"
+version = "0.3.0"
+digest = "sha256:daa3c8897a68fbfc58b95c2e1de1b7af5be8c647bbb2cfeaa54c1e5b1ba9b772"
+
 [[packages]]
 name = "wasi:sockets"
 registry = "wasi.dev"
@@ -73,3 +116,17 @@ registry = "wasi.dev"
 requirement = "=0.2.6"
 version = "0.2.6"
 digest = "sha256:f3e112b5a7926758b82cfc884b5febfce8b924cda766dbdc1f4f60893f59b301"
+
+[[packages.versions]]
+requirement = "=0.3.0"
+version = "0.3.0"
+digest = "sha256:47d4cb10ad41dbd7f543693211876bf413793d4d8dc0aad08ead34bf44348fa1"
+
+[[packages]]
+name = "wasmcloud:keyvalue"
+registry = "wasmcloud.com"
+
+[[packages.versions]]
+requirement = "=0.2.0"
+version = "0.2.0"
+digest = "sha256:a61448d7ffc36e0dc8433fad53691a6a1ca7da4d816355a32e4064f00e5eed83"

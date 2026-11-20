@@ -126,7 +126,7 @@ impl From<String> for Request {
 struct HostComponent;
 
 impl Guest for HostComponent {
-    fn run() -> Result<(), ()> {
+    async fn run() -> Result<(), ()> {
         match Cli::parse_from(environment::get_arguments().iter()).command {
             Commands::Provision {
                 instance_id,
@@ -151,7 +151,8 @@ impl Guest for HostComponent {
                     })?,
                 };
 
-                lifecycle::provision(&instance_id, &type_, tier.as_deref(), requests.as_deref())
+                lifecycle::provision(instance_id.clone(), type_, tier, requests)
+                    .await
                     .map_err(|e| {
                         log(Level::Error, "host", &format!("Error provisioning: {}", e))
                     })?;
@@ -171,7 +172,8 @@ impl Guest for HostComponent {
                     &format!("Updating service {}", instance_id),
                 );
 
-                lifecycle::update(&instance_id, tier.as_deref(), requests.as_deref())
+                lifecycle::update(instance_id, tier, requests)
+                    .await
                     .map_err(|e| log(Level::Error, "host", &format!("Error updating: {}", e)))
             }
             Commands::Destroy {
@@ -184,7 +186,8 @@ impl Guest for HostComponent {
                     &format!("Destroying service {}", instance_id),
                 );
 
-                lifecycle::destroy(&instance_id, retain)
+                lifecycle::destroy(instance_id, retain)
+                    .await
                     .map_err(|e| log(Level::Error, "host", &format!("Error destroying: {}", e)))
             }
             Commands::Bind {
@@ -204,15 +207,16 @@ impl Guest for HostComponent {
                         )
                     })?,
                 };
-                let scopes = scopes.as_deref();
 
-                lifecycle::bind(&binding_id, &instance_id, scopes).map_err(|e| {
-                    log(
-                        Level::Error,
-                        "host",
-                        &format!("Error binding to {}: {}", instance_id, e),
-                    );
-                })?;
+                lifecycle::bind(binding_id.clone(), instance_id.clone(), scopes)
+                    .await
+                    .map_err(|e| {
+                        log(
+                            Level::Error,
+                            "host",
+                            &format!("Error binding to {}: {}", instance_id, e),
+                        );
+                    })?;
 
                 println!("{}", binding_id);
 
@@ -224,9 +228,11 @@ impl Guest for HostComponent {
             } => {
                 log(Level::Info, "host", &format!("Unbinding {}", binding_id));
 
-                lifecycle::unbind(&binding_id, &instance_id).map_err(|e| {
-                    log(Level::Error, "host", &format!("Error unbinding: {}", e));
-                })
+                lifecycle::unbind(binding_id, instance_id)
+                    .await
+                    .map_err(|e| {
+                        log(Level::Error, "host", &format!("Error unbinding: {}", e));
+                    })
             }
             Commands::ListBindings { instance_id } => {
                 log(
@@ -235,7 +241,7 @@ impl Guest for HostComponent {
                     &format!("List bindings for {}", instance_id),
                 );
 
-                let bindings = lifecycle::list_bindings(&instance_id).map_err(|e| {
+                let bindings = lifecycle::list_bindings(instance_id).await.map_err(|e| {
                     log(Level::Error, "host", &format!("Error listing: {}", e));
                 })?;
                 for binding in bindings {
@@ -251,12 +257,14 @@ impl Guest for HostComponent {
 #[macro_export]
 macro_rules! println {
     () => {
-        wasi::cli::stdout::get_stdout().blocking_write_and_flush("\n".as_bytes())
-            .expect("failed writing to stdout")
+        Self!("");
     };
     ($($arg:tt)*) => {{
-        wasi::cli::stdout::get_stdout().blocking_write_and_flush((std::format!($($arg)*) + "\n").as_bytes())
-            .expect("failed writing to stdout")
+       wit_bindgen::block_on(async move{
+            let (mut writer, reader) = wit_stream::new();
+            wasi::cli::stdout::write_via_stream(reader);
+            writer.write_all((std::format!($($arg)*) + "\n").as_bytes().to_vec()).await;
+        });
     }};
 }
 

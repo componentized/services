@@ -1,3 +1,4 @@
 # the socket, then each plug
 internal-valkey-lifecycle
-dep-componentized-valkey-valkey-client
+dep-componentized-valkey-client
+dep-componentized-valkey-tcp-connector-constants

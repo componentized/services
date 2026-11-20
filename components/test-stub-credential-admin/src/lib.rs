@@ -4,7 +4,7 @@ use wasi::logging::logging::{log, Level};
 pub(crate) struct StubCredentialAdmin;
 
 impl Guest for StubCredentialAdmin {
-    fn publish(id: ServiceId, credentials: Vec<Credential>) -> Result<(), Error> {
+    async fn publish(id: ServiceId, credentials: Vec<Credential>) -> Result<(), Error> {
         log(
             Level::Info,
             "credential-admin",
@@ -13,7 +13,7 @@ impl Guest for StubCredentialAdmin {
         Ok(())
     }
 
-    fn destroy(id: ServiceId) -> Result<(), Error> {
+    async fn destroy(id: ServiceId) -> Result<(), Error> {
         log(Level::Info, "credential-admin", &format!("destroy id={id}"));
         Ok(())
     }

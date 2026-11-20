@@ -1,5 +1,13 @@
 package componentized:service;
 
+let logger = new local:dep-componentized-logging-to-stdout {
+    ...
+};
+
+let secrets = new local:dep-componentized-secrets-from-config {
+    ...
+};
+
 let credential-store = new local:filesystem-credential-store {
     ...
 };
@@ -9,13 +17,15 @@ let credential-admin = new local:filesystem-credential-admin {
 let lifecycle = new local:test-lifecycle {
     credential-admin: credential-admin.credential-admin,
     credential-store: credential-store.credential-store,
+    "componentized:secrets/store@0.1.1": secrets["componentized:secrets/store@0.1.1"],
+    logging: logger.logging,
     ...
 };
 
 let ops = new local:test-ops {
+    logging: logger.logging,
     ...
 };
-let static-config-factory = new local:dep-componentized-static-config-factory {};
 
 export new local:test-service-cli {
     credential-store: credential-store.credential-store,
@@ -23,7 +33,6 @@ export new local:test-service-cli {
     lifecycle: lifecycle.lifecycle,
 
     ops: ops.ops,
-    factory: static-config-factory.factory,
 
     ...
 }.run;

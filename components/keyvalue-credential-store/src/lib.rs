@@ -2,7 +2,7 @@ use exports::componentized::services::credential_store::{Credential, Error, Gues
 use serde_json;
 use std::collections::HashMap;
 use std::vec;
-use wasi::keyvalue::store::{open, Bucket};
+use wasmcloud::keyvalue::store::{open, Bucket};
 
 const BUCKET_KEY: &str = "bucket";
 const BUCKET_DEFAULT: &str = "bindings";
@@ -10,18 +10,37 @@ const BUCKET_DEFAULT: &str = "bindings";
 pub(crate) struct KeyvalueCredentialStore;
 
 impl KeyvalueCredentialStore {
-    fn get_bucket() -> Result<Bucket, Error> {
+    async fn get_bucket() -> Result<Bucket, Error> {
         let bucket_id = wasi::config::store::get(BUCKET_KEY)
             .map_err(Self::map_config_err)?
             .unwrap_or(String::from(BUCKET_DEFAULT));
-        open(&bucket_id).map_err(Self::map_keyvalue_err)
+        open(bucket_id).await.map_err(Self::map_keyvalue_err)
     }
 
-    fn map_keyvalue_err(e: wasi::keyvalue::store::Error) -> Error {
+    fn map_keyvalue_err(e: wasmcloud::keyvalue::store::Error) -> Error {
         match e {
-            wasi::keyvalue::store::Error::NoSuchStore => Error::from("NoSuchStore Error"),
-            wasi::keyvalue::store::Error::AccessDenied => Error::from("AccessDenied Error"),
-            wasi::keyvalue::store::Error::Other(msg) => Error::from(format!("Other Error: {msg}")),
+            wasmcloud::keyvalue::types::Error::NoSuchStore => {
+                Error::from("keyvalue: no-such-store")
+            }
+            wasmcloud::keyvalue::types::Error::AccessDenied => {
+                Error::from("keyvalue: access-denied")
+            }
+            wasmcloud::keyvalue::types::Error::InvalidArgument => {
+                Error::from("keyvalue: invalid-argument")
+            }
+            wasmcloud::keyvalue::types::Error::PreconditionFailed => {
+                Error::from("keyvalue: precondition-failed")
+            }
+            wasmcloud::keyvalue::types::Error::Timeout => Error::from("keyvalue: timeout"),
+            wasmcloud::keyvalue::types::Error::StoreUnavailable => {
+                Error::from("keyvalue: store-unavailable")
+            }
+            wasmcloud::keyvalue::types::Error::QuotaExceeded => {
+                Error::from("keyvalue: quota-exceeded")
+            }
+            wasmcloud::keyvalue::types::Error::Other(message) => {
+                Error::from(format!("keyvalue: {message}"))
+            }
         }
     }
 
@@ -40,9 +59,11 @@ impl KeyvalueCredentialStore {
 }
 
 impl Guest for KeyvalueCredentialStore {
-    fn fetch(id: ServiceId) -> Result<Vec<Credential>, Error> {
-        let creds = Self::get_bucket()?
-            .get(&id)
+    async fn fetch(id: ServiceId) -> Result<Vec<Credential>, Error> {
+        let creds = Self::get_bucket()
+            .await?
+            .get(id)
+            .await
             .map_err(Self::map_keyvalue_err)?
             .unwrap_or(vec![]);
 

@@ -1,70 +1,34 @@
-use chrono::DateTime;
-use componentized::services::credential_admin::{destroy, publish};
-use componentized::services::types::{Credential, Request, Scope, Tier};
-use componentized::valkey::store::{self as valkey};
-use exports::componentized::services::lifecycle::{
-    Error, Guest as Lifecycle, ServiceBindingId, ServiceInstanceId,
+use crate::{
+    componentized::{
+        secrets::store as secrets,
+        services::{
+            credential_admin::{destroy, publish},
+            types::{Credential, Request, Scope, Tier},
+        },
+        valkey::{
+            commands,
+            connector::{connect, Connection},
+            tcp_connector_constants as constants,
+            types::{
+                AclCommandRule, AclKeyRule, AclRule, AclUserRule, ErrorCode as ValkeyErrorCode,
+                StringOrBytes,
+            },
+        },
+    },
+    exports::componentized::services::lifecycle::{
+        Error, Guest as Lifecycle, ServiceBindingId, ServiceInstanceId,
+    },
+    wasi::clocks::system_clock::now,
 };
-use wasi::clocks::wall_clock::now;
-use wasi::config::store::{self as config};
 
-const HOSTNAME_KEY: &str = "hostname";
-const HOSTNAME_DEFAULT: &str = "127.0.0.1";
-const PORT_KEY: &str = "port";
-const PORT_DEFAULT: &str = "6379";
-const USERNAME_KEY: &str = "username";
-const USERNAME_DEFAULT: &str = "default";
-const PASSWORD_KEY: &str = "password";
+use chrono::DateTime;
 
 #[derive(Debug, Clone)]
 struct ValkeyService {}
 
 impl ValkeyService {
-    fn instances_hash_key() -> String {
-        "instances".to_string()
-    }
-    fn instance_data_key_prefix(instance_id: ServiceInstanceId) -> String {
-        format!("instances:{instance_id}:")
-    }
-    fn instance_bindings_hash_key(instance_id: ServiceInstanceId) -> String {
-        format!("instances:{instance_id}")
-    }
-
-    fn connect() -> Result<valkey::Connection, Error> {
-        let host = Self::hostname()?;
-        let port = Self::port()?;
-
-        let opts = valkey::HelloOpts {
-            proto_ver: Some("3".to_string()),
-            auth: match config::get(PASSWORD_KEY)? {
-                Some(password) => {
-                    let username: String =
-                        config::get(USERNAME_KEY)?.unwrap_or(USERNAME_DEFAULT.to_string());
-                    Some((username, password))
-                }
-                None => None,
-            },
-            client_name: None,
-        };
-        let connection = valkey::connect(&host, port, Some(&opts))?;
-
-        Ok(connection)
-    }
-    fn hostname() -> Result<String, Error> {
-        let hostname = config::get(HOSTNAME_KEY)?.unwrap_or(String::from(HOSTNAME_DEFAULT));
-        Ok(hostname)
-    }
-    fn port() -> Result<u16, Error> {
-        let port = config::get(PORT_KEY)?.unwrap_or(String::from(PORT_DEFAULT));
-        let port: u16 = port
-            .parse()
-            .map_err(|_| Error::from("port must be an integer"))?;
-        Ok(port)
-    }
-}
-
-impl Lifecycle for ValkeyService {
-    fn provision(
+    async fn provision_with_connection(
+        connection: &Connection,
         instance_id: ServiceInstanceId,
         type_: String,
         tier: Option<Tier>,
@@ -81,49 +45,40 @@ impl Lifecycle for ValkeyService {
             Err(Error::from("requests are not supported"))?;
         }
 
-        let connection = Self::connect()?;
-
-        connection.hset(&Self::instances_hash_key(), &instance_id, "valkey")?;
+        commands::hset(
+            &connection,
+            instances_hash_key(),
+            vec![(instance_id, StringOrBytes::from("valkey"))],
+        )
+        .await?;
 
         Ok(())
     }
 
-    fn update(
-        _instance_id: ServiceInstanceId,
-        tier: Option<Tier>,
-        requests: Option<Vec<Request>>,
+    async fn destroy_with_connection(
+        connection: &Connection,
+        instance_id: ServiceInstanceId,
+        retain: Option<bool>,
     ) -> Result<(), Error> {
-        if tier.is_some() {
-            Err(Error::from("tier is not supported"))?;
-        }
-        if requests.is_some() {
-            Err(Error::from("requests are not supported"))?;
-        }
-
-        // nothing is updatable
-        Ok(())
-    }
-
-    fn destroy(instance_id: ServiceInstanceId, retain: Option<bool>) -> Result<(), Error> {
-        for binding_id in Self::list_bindings(instance_id.clone())? {
-            Self::unbind(binding_id, instance_id.clone())?;
+        for binding_id in
+            Self::list_bindings_with_connection(connection, instance_id.clone()).await?
+        {
+            Self::unbind_with_connection(connection, binding_id, instance_id.clone()).await?;
         }
 
-        let connection = Self::connect()?;
-
-        connection.hdel(&Self::instances_hash_key(), &instance_id)?;
+        commands::hdel(&connection, instances_hash_key(), vec![instance_id.clone()]).await?;
 
         if !retain.unwrap_or(false) {
-            let data_key_prefix = Self::instance_data_key_prefix(instance_id);
-            for key in connection.keys(format!("{data_key_prefix}*").as_str())? {
-                connection.del(&key)?;
-            }
+            let data_key_prefix = instance_data_key_prefix(instance_id);
+            let keys = commands::keys(&connection, format!("{data_key_prefix}*")).await?;
+            commands::del(&connection, keys).await?;
         }
 
         Ok(())
     }
 
-    fn bind(
+    async fn bind_with_connection(
+        connection: &Connection,
         binding_id: ServiceBindingId,
         instance_id: ServiceInstanceId,
         scopes: Option<Vec<Scope>>,
@@ -136,14 +91,23 @@ impl Lifecycle for ValkeyService {
             }
         }
 
-        let connection = Self::connect()?;
+        let key_prefix = instance_data_key_prefix(instance_id.clone());
 
-        let key_prefix = Self::instance_data_key_prefix(instance_id.clone());
+        secrets::init().await?;
 
-        let hostname = Self::hostname()?;
-        let port = Self::port()?;
+        let hostname =
+            secret(&constants::hostname_key())?.unwrap_or_else(constants::hostname_default);
+        let port = match secret(&constants::port_key())? {
+            Some(port) => port.parse().map_err(|_| {
+                Error::from(format!(
+                    "{} must be a port number: {port}",
+                    constants::port_key()
+                ))
+            })?,
+            None => constants::port_default(),
+        };
         let username = binding_id.clone();
-        let password = connection.acl_genpass()?;
+        let password = commands::acl_genpass(&connection, None).await?;
 
         let credentials = vec![
             Credential {
@@ -191,56 +155,177 @@ impl Lifecycle for ValkeyService {
             },
         ];
 
-        publish(&binding_id, credentials.as_slice())?;
+        publish(binding_id.clone(), credentials).await?;
 
-        let mut rules = vec!["on".to_string(), format!(">{password}")];
+        let mut rules = vec![
+            AclRule::User(AclUserRule::On),
+            AclRule::User(AclUserRule::Password(password)),
+        ];
         for scope in scopes {
-            rules.push(format!("+@{scope}"));
+            rules.push(AclRule::Command(AclCommandRule::AddCategory(scope)));
         }
-        rules.push(format!("~{key_prefix}*"));
+        rules.push(AclRule::Keys(AclKeyRule::Add(format!("{key_prefix}*"))));
 
-        connection.acl_setuser(&username, &rules)?;
-        connection.hset(
-            &Self::instance_bindings_hash_key(instance_id.clone()),
-            &binding_id,
-            "valkey",
-        )?;
+        commands::acl_setuser(&connection, username, Some(rules)).await?;
+        commands::hset(
+            &connection,
+            instance_bindings_hash_key(instance_id.clone()),
+            vec![(binding_id, StringOrBytes::from("valkey"))],
+        )
+        .await?;
 
         Ok(())
     }
 
-    fn unbind(binding_id: ServiceBindingId, instance_id: ServiceInstanceId) -> Result<(), Error> {
-        let connection = Self::connect()?;
+    async fn unbind_with_connection(
+        connection: &Connection,
+        binding_id: ServiceBindingId,
+        instance_id: ServiceInstanceId,
+    ) -> Result<(), Error> {
+        commands::acl_deluser(&connection, vec![binding_id.clone()]).await?;
+        commands::hdel(
+            &connection,
+            instance_bindings_hash_key(instance_id),
+            vec![binding_id.clone()],
+        )
+        .await?;
 
-        connection.acl_deluser(&binding_id)?;
-        connection.hdel(&Self::instance_bindings_hash_key(instance_id), &binding_id)?;
-
-        destroy(&binding_id)?;
+        destroy(binding_id).await?;
 
         Ok(())
     }
 
-    fn list_bindings(instance_id: ServiceInstanceId) -> Result<Vec<ServiceBindingId>, Error> {
-        Ok(Self::connect()?.hkeys(&Self::instance_bindings_hash_key(instance_id))?)
+    async fn list_bindings_with_connection(
+        connection: &Connection,
+        instance_id: ServiceInstanceId,
+    ) -> Result<Vec<ServiceBindingId>, Error> {
+        Ok(commands::hkeys(&connection, instance_bindings_hash_key(instance_id)).await?)
     }
 }
 
-impl From<config::Error> for Error {
-    fn from(e: config::Error) -> Self {
+impl Lifecycle for ValkeyService {
+    async fn provision(
+        instance_id: ServiceInstanceId,
+        type_: String,
+        tier: Option<Tier>,
+        requests: Option<Vec<Request>>,
+    ) -> Result<(), Error> {
+        let connection = connect().await?;
+        Self::provision_with_connection(&connection, instance_id, type_, tier, requests).await
+    }
+
+    async fn update(
+        _instance_id: ServiceInstanceId,
+        tier: Option<Tier>,
+        requests: Option<Vec<Request>>,
+    ) -> Result<(), Error> {
+        if tier.is_some() {
+            Err(Error::from("tier is not supported"))?;
+        }
+        if requests.is_some() {
+            Err(Error::from("requests are not supported"))?;
+        }
+
+        // nothing is updatable
+        Ok(())
+    }
+
+    async fn destroy(instance_id: ServiceInstanceId, retain: Option<bool>) -> Result<(), Error> {
+        let connection = connect().await?;
+        Self::destroy_with_connection(&connection, instance_id, retain).await
+    }
+
+    async fn bind(
+        binding_id: ServiceBindingId,
+        instance_id: ServiceInstanceId,
+        scopes: Option<Vec<Scope>>,
+    ) -> Result<(), Error> {
+        let connection = connect().await?;
+        Self::bind_with_connection(&connection, binding_id, instance_id, scopes).await
+    }
+
+    async fn unbind(
+        binding_id: ServiceBindingId,
+        instance_id: ServiceInstanceId,
+    ) -> Result<(), Error> {
+        let connection = connect().await?;
+        Self::unbind_with_connection(&connection, binding_id, instance_id).await
+    }
+
+    async fn list_bindings(instance_id: ServiceInstanceId) -> Result<Vec<ServiceBindingId>, Error> {
+        let connection = connect().await?;
+        Self::list_bindings_with_connection(&connection, instance_id).await
+    }
+}
+
+fn instances_hash_key() -> String {
+    "instances".to_string()
+}
+fn instance_data_key_prefix(instance_id: ServiceInstanceId) -> String {
+    format!("instances:{instance_id}:")
+}
+fn instance_bindings_hash_key(instance_id: ServiceInstanceId) -> String {
+    format!("instances:{instance_id}")
+}
+
+/// The value of the lifecycle's secret, none when it is not found.
+///
+/// The store must be initialized before this method is called.
+fn secret(key: &str) -> Result<Option<String>, Error> {
+    match secrets::get(key) {
+        Ok(secrets::Secret::String(secret)) => Ok(Some(secret)),
+        Ok(secrets::Secret::Bytes(_)) => Err(Error::from(format!(
+            "secrets: value for {key} must be a string "
+        ))),
+        Err(secrets::ErrorCode::NotFound) => Ok(None),
+        Err(secrets::ErrorCode::NotInitialized) => Err(Error::from("secrets: not initialized")),
+        Err(secrets::ErrorCode::Other(None)) => Err(Error::from("secrets: other".to_string())),
+        Err(secrets::ErrorCode::Other(Some(message))) => Err(Error::from(message)),
+    }
+}
+
+impl From<ValkeyErrorCode> for Error {
+    fn from(e: ValkeyErrorCode) -> Self {
         match e {
-            config::Error::Upstream(msg) => Self::from(format!("Config store Upstream: {msg}")),
-            config::Error::Io(msg) => Self::from(format!("Config store IO: {msg}")),
+            componentized::valkey::types::ErrorCode::Closed(None) => Self::from("closed"),
+            componentized::valkey::types::ErrorCode::Closed(Some(message)) => {
+                Self::from(format!("closed: {message}"))
+            }
+            componentized::valkey::types::ErrorCode::Client(message) => {
+                Self::from(format!("client: {message}"))
+            }
+            componentized::valkey::types::ErrorCode::Resp(message) => {
+                Self::from(format!("resp: {message}"))
+            }
+            componentized::valkey::types::ErrorCode::Server(StringOrBytes::String(message)) => {
+                format!("server: {message}")
+            }
+            componentized::valkey::types::ErrorCode::Server(StringOrBytes::Bytes(_)) => {
+                format!("server")
+            }
+            componentized::valkey::types::ErrorCode::Lagged => Self::from("lagged"),
         }
     }
 }
 
-impl From<valkey::Error> for Error {
-    fn from(e: valkey::Error) -> Self {
+impl From<secrets::ErrorCode> for Error {
+    fn from(e: secrets::ErrorCode) -> Self {
         match e {
-            valkey::Error::Client(msg) => Self::from(format!("Valkey store Client: {msg}")),
-            valkey::Error::Resp(msg) => Self::from(format!("Valkey store RESP: {msg}")),
-            valkey::Error::Valkey(msg) => Self::from(format!("Valkey store Valkey: {msg}")),
+            componentized::secrets::types::ErrorCode::NotInitialized => {
+                Self::from("secrets: not-initialized")
+            }
+            componentized::secrets::types::ErrorCode::NotFound => Self::from("secrets: not-found"),
+            componentized::secrets::types::ErrorCode::Other(None) => Self::from("secrets"),
+            componentized::secrets::types::ErrorCode::Other(Some(message)) => {
+                Self::from(format!("secrets: {message}"))
+            }
         }
+    }
+}
+
+impl From<&str> for StringOrBytes {
+    fn from(value: &str) -> Self {
+        Self::String(value.to_string())
     }
 }
 
