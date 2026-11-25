@@ -31,7 +31,7 @@ members = [
 ]
 
 [workspace.dependencies]
-chrono = { git = "https://github.com/chronotope/chrono.git", branch = "0.5.x" }
+jiff = { version = "1.0", default-features = false, features = ["std", "alloc"] }
 serde_json = "1.0"
 test-harness = { path = "./crates/test-harness" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }

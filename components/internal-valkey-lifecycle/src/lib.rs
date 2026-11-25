@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     componentized::{
         secrets::store as secrets,
@@ -18,10 +20,10 @@ use crate::{
     exports::componentized::services::lifecycle::{
         Error, Guest as Lifecycle, ServiceBindingId, ServiceInstanceId,
     },
-    wasi::clocks::system_clock::now,
+    wasi::clocks::system_clock::{now, Instant},
 };
 
-use chrono::DateTime;
+use jiff::{tz::TimeZone, Timestamp};
 
 #[derive(Debug, Clone)]
 struct ValkeyService {}
@@ -148,10 +150,7 @@ impl ValkeyService {
             },
             Credential {
                 key: String::from("issued-at"),
-                value: DateTime::from_timestamp(now().seconds as i64, 0)
-                    .expect("valid wall clock time")
-                    .format("%Y-%m-%dT%H:%M:%SZ")
-                    .to_string(),
+                value: now().to_string(),
             },
         ];
 
@@ -326,6 +325,22 @@ impl From<secrets::ErrorCode> for Error {
 impl From<&str> for StringOrBytes {
     fn from(value: &str) -> Self {
         Self::String(value.to_string())
+    }
+}
+
+impl Display for Instant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let dt = TimeZone::UTC
+            .to_datetime(Timestamp::new(self.seconds, self.nanoseconds as i32).unwrap_or_default());
+        f.write_fmt(format_args!(
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+            dt.year(),
+            dt.month(),
+            dt.day(),
+            dt.hour(),
+            dt.minute(),
+            dt.second(),
+        ))
     }
 }
 
