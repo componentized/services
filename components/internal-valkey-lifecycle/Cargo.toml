@@ -8,5 +8,5 @@ license = "Apache-2.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-chrono = { workspace = true }
+jiff = { workspace = true }
 wit-bindgen = { workspace = true }
