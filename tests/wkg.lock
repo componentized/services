@@ -16,9 +16,9 @@ name = "componentized:static-config"
 registry = "componentized.dev"
 
 [[packages.versions]]
-requirement = "=0.3.0"
-version = "0.3.0"
-digest = "sha256:4ef68a5229318e42db7beb37edc7051eab642a65130571d7a3f034923a6d26d1"
+requirement = "=0.3.1"
+version = "0.3.1"
+digest = "sha256:e5ce5b1c0fcac83910da6137e6c02b654ee408272583a97841c4aeb150e2844b"
 
 [[packages]]
 name = "wasi:cli"

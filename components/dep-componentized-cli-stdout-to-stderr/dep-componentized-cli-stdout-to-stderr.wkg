@@ -1,2 +1,2 @@
-ghcr.io/componentized/cli/stdout-to-stderr:0.2.0@sha256:1a2f9152916ab52f23472a5fe5b84c58b3f826644c523c05d08db65a192654ed
-ghcr.io/componentized/cli/stdout-to-stderr:0.2.0_debug@sha256:8b17183b4ed282c1d18cf7dd3e3dcc8b78200bba8a477de12ba7b4eaa44405f5
+ghcr.io/componentized/cli/stdout-to-stderr:0.2.1@sha256:cc63ff28ca6efd45b34678d5d9248fa385955ee8d1538833edc23542d1d3fe18
+ghcr.io/componentized/cli/stdout-to-stderr:0.2.1_debug@sha256:734540efd4811cd3e49a6705a4f13f28708cdbec4e9baacc24cc9872f1872e42

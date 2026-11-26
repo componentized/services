@@ -1,2 +1,2 @@
-ghcr.io/componentized/valkey/client:0.3.0-dev@sha256:4458df9f63e344b8757792d2f6133ccf4aee18fec0a48559150f0e291e0d8cff
-ghcr.io/componentized/valkey/client:0.3.0-dev_debug@sha256:86a4a007d780a62a6df0239b6020d882d0a4e69986c81811c20c377958ba3154
+ghcr.io/componentized/valkey/client:0.3.0@sha256:769e9c4370fc44985dd204c6a574aeb81fc188c00a9110513f3d3a4028d05c22
+ghcr.io/componentized/valkey/client:0.3.0_debug@sha256:1f4e2b8b60d4255a02abfb58577f9d976dea5a81103bd0575c88f5dbe6dc7e3e

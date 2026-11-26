@@ -1,2 +1,2 @@
-ghcr.io/componentized/logging/to-stdout:0.3.1@sha256:42a1c0ec26485ca4c566ad2346df1d16ffdb27d0f59ba876af4b1a8ce9c22bc0
-ghcr.io/componentized/logging/to-stdout:0.3.1_debug@sha256:44931240d45fc491c6afd88092b11332bdbf6987d84663608ac403bf8560743f
+ghcr.io/componentized/logging/to-stdout:0.3.2@sha256:0d32b4738ed0a943bc6489224d2260b65e581f8b101923fc187b477320168a2b
+ghcr.io/componentized/logging/to-stdout:0.3.2_debug@sha256:39604529bb6ce1bfd1b5510d44d01891ae03104c3834f13c1f5ea1bfdcbbc6e3

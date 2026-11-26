@@ -16,9 +16,9 @@ name = "componentized:valkey"
 registry = "componentized.dev"
 
 [[packages.versions]]
-requirement = "=0.3.0-dev"
-version = "0.3.0-dev"
-digest = "sha256:2ac63302bfd9f39087df6249ed93270a485f04312b2073b35ab362a693d62626"
+requirement = "=0.3.0"
+version = "0.3.0"
+digest = "sha256:59cbff03c1a079fe084ffa55129d6d063b158c76516e21b54ba60187e0f8c387"
 
 [[packages]]
 name = "wasi:cli"

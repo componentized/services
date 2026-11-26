@@ -6,7 +6,7 @@ world filesystem-lifecycle {
 
 world valkey-lifecycle {
     include componentized:services/service-lifecycle@0.0.5-dev;
-    include componentized:valkey/imports@0.3.0-dev;
+    include componentized:valkey/imports@0.3.0;
     import componentized:secrets/store@0.1.1;
 }
 

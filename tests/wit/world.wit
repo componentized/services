@@ -27,7 +27,7 @@ world cli {
 
     import ops;
 
-    include componentized:static-config/imports@0.3.0;
+    include componentized:static-config/imports@0.3.1;
 
     include wasi:random/imports@0.3.0;
     include wasi:cli/command@0.3.0;
