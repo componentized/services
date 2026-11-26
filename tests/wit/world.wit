@@ -1,16 +1,16 @@
 package componentized:services-test-components;
 
 world stub-lifecycle {
-    include componentized:services/service-lifecycle@0.0.5-dev;
+    include componentized:services/service-lifecycle@0.0.5;
 }
 
 world stub-credential-store {
-    export componentized:services/credential-store@0.0.5-dev;
+    export componentized:services/credential-store@0.0.5;
     include wasi:logging/imports@0.1.0-draft;
 }
 
 world stub-credential-admin {
-    export componentized:services/credential-admin@0.0.5-dev;
+    export componentized:services/credential-admin@0.0.5;
     include wasi:logging/imports@0.1.0-draft;
 }
 
@@ -23,7 +23,7 @@ world stub-client {
 }
 
 world cli {
-    include componentized:services/imports@0.0.5-dev;
+    include componentized:services/imports@0.0.5;
 
     import ops;
 
@@ -34,12 +34,12 @@ world cli {
 }
 
 world lifecycle-router {
-    import filesystem-lifecycle: componentized:services/lifecycle@0.0.5-dev;
-    import keyvalue-lifecycle: componentized:services/lifecycle@0.0.5-dev;
-    import componentized:services/credential-admin@0.0.5-dev;
-    import componentized:services/credential-store@0.0.5-dev;
+    import filesystem-lifecycle: componentized:services/lifecycle@0.0.5;
+    import keyvalue-lifecycle: componentized:services/lifecycle@0.0.5;
+    import componentized:services/credential-admin@0.0.5;
+    import componentized:services/credential-store@0.0.5;
 
-    export componentized:services/lifecycle@0.0.5-dev;
+    export componentized:services/lifecycle@0.0.5;
 }
 
 world ops-router {

@@ -1,5 +1,5 @@
 interface ops {
-    use componentized:services/types@0.0.5-dev.{error};
+    use componentized:services/types@0.0.5.{error};
 
     %list: async func(path: string) -> result<list<string>, error>;
     read: async func(path: string) -> result<list<u8>, error>;
