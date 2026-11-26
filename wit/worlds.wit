@@ -1,4 +1,4 @@
-package componentized:services@0.0.5;
+package componentized:services@0.0.6-dev;
 
 world service-lifecycle {
     export lifecycle;

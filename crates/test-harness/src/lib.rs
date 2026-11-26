@@ -24,7 +24,7 @@ pub mod bindings {
             package componentized:test-harness;
 
             world harness {
-                import componentized:services/credential-store@0.0.5;
+                import componentized:services/credential-store@0.0.6-dev;
                 import wasi:config/store@0.2.0-rc.1;
                 import componentized:secrets/store@0.1.1;
                 export componentized:secrets/store@0.1.1;
