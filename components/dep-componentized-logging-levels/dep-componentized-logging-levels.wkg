@@ -1,2 +1,2 @@
-ghcr.io/componentized/logging/levels:0.3.1@sha256:c5efdb93bd709ffdca5b6f6f7c2dadc73b43941a3e272d0f8d4614e551f8d5f1
-ghcr.io/componentized/logging/levels:0.3.1_debug@sha256:86e17c0ebd0b55fe0ab8d3781b8690706619d0d8b2062a45ad8b20601eae955e
+ghcr.io/componentized/logging/levels:0.3.2@sha256:42e40504204133e5ba200dbec5adb4194f888da59996bd11bb6515bc86ccc0a0
+ghcr.io/componentized/logging/levels:0.3.2_debug@sha256:3cc4220fbd4ebfd428226bd1d39f7d43faf2f17a642416c2c7ffdfb7e470fca2

@@ -1,2 +1,2 @@
-ghcr.io/componentized/valkey/tcp-connector-constants:0.3.0-dev@sha256:54c98ad11dba33982a00982ec69e9b2933a333092aa92acb18fca7cec42e5f16
-ghcr.io/componentized/valkey/tcp-connector-constants:0.3.0-dev_debug@sha256:90fa5e1730355ef854c5d6c957ea05cec1ba2bd7568d5b45e39d385464e835b5
+ghcr.io/componentized/valkey/tcp-connector-constants:0.3.0@sha256:66c25750578d454abde572e58bf3daf0e03dec50d3fb48b495f96cb6d3d4bc75
+ghcr.io/componentized/valkey/tcp-connector-constants:0.3.0@sha256:66c25750578d454abde572e58bf3daf0e03dec50d3fb48b495f96cb6d3d4bc75
